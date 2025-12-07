@@ -12,6 +12,7 @@ class StudentModel {
   final bool isBlind;
   final bool voiceOnlyMode;
   final bool studyModeEnabled;
+  final int studyMinutes;
   final DateTime createdAt;
 
   StudentModel({
@@ -26,6 +27,7 @@ class StudentModel {
     this.isBlind = false,
     this.voiceOnlyMode = false,
     this.studyModeEnabled = false,
+    this.studyMinutes = 0,
     required this.createdAt,
   });
 
@@ -43,6 +45,7 @@ class StudentModel {
       isBlind: data['isBlind'] ?? false,
       voiceOnlyMode: data['voiceOnlyMode'] ?? false,
       studyModeEnabled: data['studyModeEnabled'] ?? false,
+      studyMinutes: data['studyMinutes'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -60,6 +63,7 @@ class StudentModel {
       'isBlind': isBlind,
       'voiceOnlyMode': voiceOnlyMode,
       'studyModeEnabled': studyModeEnabled,
+      'studyMinutes': studyMinutes,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -76,6 +80,7 @@ class StudentModel {
     bool? isBlind,
     bool? voiceOnlyMode,
     bool? studyModeEnabled,
+    int? studyMinutes,
   }) {
     return StudentModel(
       studentId: studentId,
@@ -89,6 +94,7 @@ class StudentModel {
       isBlind: isBlind ?? this.isBlind,
       voiceOnlyMode: voiceOnlyMode ?? this.voiceOnlyMode,
       studyModeEnabled: studyModeEnabled ?? this.studyModeEnabled,
+      studyMinutes: studyMinutes ?? this.studyMinutes,
       createdAt: createdAt,
     );
   }

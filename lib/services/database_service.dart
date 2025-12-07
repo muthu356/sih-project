@@ -93,6 +93,14 @@ class DatabaseService {
     });
   }
 
+  Future<List<AssignmentSubmission>> getStudentSubmissions(String studentId) async {
+    final querySnapshot = await _firestore
+        .collection('assignment_submissions')
+        .where('studentId', isEqualTo: studentId)
+        .get();
+    return querySnapshot.docs.map((doc) => AssignmentSubmission.fromFirestore(doc)).toList();
+  }
+
   // ========== APP POLICIES ==========
   Future<void> saveAppPolicy(AppPolicyModel policy) async {
     await _firestore.collection('app_policies').doc(policy.policyId).set(policy.toFirestore());

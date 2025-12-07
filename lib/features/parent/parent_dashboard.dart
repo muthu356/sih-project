@@ -9,6 +9,7 @@ import 'app_blocking_screen.dart';
 import 'parent_assignment_screen.dart';
 import 'parent_chat_list_screen.dart';
 import 'parent_notifications_screen.dart';
+import 'student_progress_screen.dart';
 import '../../core/theme.dart';
 
 class ParentDashboard extends StatefulWidget {
@@ -155,57 +156,85 @@ class _StudentsTab extends StatelessWidget {
               elevation: 2,
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppTheme.primaryLight.withOpacity(0.1),
-                  child: Text(
-                    student.fullName[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: AppTheme.primaryLight,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                title: Text(
-                  student.fullName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text('Grade ${student.grade} ${student.section}'),
-                    if (student.isBlind)
-                      Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Voice mode',
-                          style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+              child: Column(
+                children: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      radius: 28,
+                      backgroundColor: AppTheme.primaryLight.withOpacity(0.1),
+                      child: Text(
+                        student.fullName[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: AppTheme.primaryLight,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                  ],
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.block),
-                  color: AppTheme.accentOrange,
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AppBlockingScreen(
-                        studentId: student.studentId,
-                        parentId: parentId,
+                    ),
+                    title: Text(
+                      student.fullName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text('Grade ${student.grade} ${student.section}'),
+                        if (student.isBlind)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Voice mode',
+                              style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                            ),
+                          ),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.block),
+                      color: AppTheme.accentOrange,
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AppBlockingScreen(
+                            studentId: student.studentId,
+                            parentId: parentId,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => StudentProgressScreen(student: student),
+                          ),
+                        ),
+                        icon: const Icon(Icons.bar_chart),
+                        label: const Text('View Progress'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primaryLight,
+                          side: const BorderSide(color: AppTheme.primaryLight),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           },
