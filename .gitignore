@@ -1,0 +1,114 @@
+# ------------------------------
+# Miscellaneous
+# ------------------------------
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# ------------------------------
+# IntelliJ / Android Studio
+# ------------------------------
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Uncomment only if you don't want editor configs in repo
+# .vscode/
+
+# ------------------------------
+# Flutter / Dart / Pub
+# ------------------------------
+.dart_tool/
+.flutter/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+.pub-cache/
+.packages
+/build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# ------------------------------
+# Symbolication / Obfuscation
+# ------------------------------
+app.*.symbols
+app.*.map.json
+
+# ------------------------------
+# Android Build (Very Important)
+# ------------------------------
+android/.gradle/
+android/.kotlin/
+android/.cxx/
+android/build/
+android/app/.cxx/
+android/app/build/
+android/local.properties
+
+# Android Studio build outputs
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ------------------------------
+# Gradle / Kotlin Intermediate Junk
+# ------------------------------
+**/intermediates/
+**/incremental/
+**/generated/
+**/tmp/
+**/checkManifest*
+**/dex/
+**/dexBuilder*/
+**/external_libs_dex_archive/
+**/external_file_lib_dex_archives/
+**/merged_assets/
+**/merged_jni_libs/
+**/merged_resources/
+**/merged_manifests/
+
+# ------------------------------
+# CMake / Native Build Files
+# ------------------------------
+**/CMakeFiles/
+**/CMakeTmp/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/build.ninja
+**/additional_project_files.txt
+**/metadata_generation_command.txt
+**/*.o
+**/*.obj
+**/*.a
+**/*.bin
+**/*.json
+**/*.ninja
+
+# ------------------------------
+# Flutter build assets
+# ------------------------------
+**/flutter_assets/
+
+# ------------------------------
+# Output Artifacts
+# ------------------------------
+*.apk
+*.aab
+*.ipa
+*.jar
+*.dex
+
+# ------------------------------
+# OS-specific
+# ------------------------------
+Thumbs.db
+ehthumbs.db

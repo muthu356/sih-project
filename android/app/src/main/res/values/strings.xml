@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Smart Student Monitor</string>
+    <string name="accessibility_service_description">This service monitors app usage to help students track their study time and identify distractions. It captures app names and window titles to provide insights into study habits.</string>
+</resources>
+
+
