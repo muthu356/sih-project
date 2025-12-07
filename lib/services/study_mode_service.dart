@@ -1,44 +1,81 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'windows_monitoring_service.dart';
 
+/// Study Mode Service for Windows Desktop
+/// Manages study mode state and communicates with Windows Agent
 class StudyModeService {
-  static const String _keyStudyMode = 'study_mode_enabled';
-  static const String _keyBlockedApps = 'blocked_apps';
+  static final StudyModeService _instance = StudyModeService._internal();
+  factory StudyModeService() => _instance;
+  StudyModeService._internal();
 
-  Future<bool> isStudyModeEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool(_keyStudyMode) ?? false;
-    print('📱 StudyModeService: Reading study mode = $enabled');
-    return enabled;
+  final WindowsMonitoringService _windowsService = WindowsMonitoringService();
+  
+  bool _isStudyModeEnabled = false;
+  List<String> _blockedApps = [];
+
+  bool get isStudyModeEnabled => _isStudyModeEnabled;
+  List<String> get blockedApps => _blockedApps;
+
+  /// Check if running on Windows Desktop
+  bool get isWindows {
+    if (kIsWeb) return false;
+    try {
+      return Platform.isWindows;
+    } catch (e) {
+      return false;
+    }
   }
 
-  Future<void> enableStudyMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyStudyMode, true);
-    print('✅ StudyModeService: Study mode ENABLED');
-    await _logCurrentState();
+  /// Start study mode with blocked apps
+  Future<void> startStudyMode(List<String> appsToBlock) async {
+    print('[StudyMode] Starting study mode...');
+    _blockedApps = appsToBlock;
+    _isStudyModeEnabled = true;
+
+    if (isWindows) {
+      // Connect to Windows Agent
+      final connected = await _windowsService.connect();
+      if (connected) {
+        await _windowsService.startStudyMode(appsToBlock);
+        print('[StudyMode] ✅ Windows study mode started with ${appsToBlock.length} blocked apps');
+      } else {
+        print('[StudyMode] ❌ Failed to connect to Windows Agent');
+      }
+    } else {
+      // For other platforms, just store locally
+      print('[StudyMode] Non-Windows platform - storing locally only');
+    }
   }
 
-  Future<void> disableStudyMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyStudyMode, false);
-    print('⏸️ StudyModeService: Study mode DISABLED');
-    await _logCurrentState();
+  /// Stop study mode
+  Future<void> stopStudyMode() async {
+    print('[StudyMode] Stopping study mode...');
+    _isStudyModeEnabled = false;
+    _blockedApps = [];
+
+    if (isWindows && _windowsService.isConnected) {
+      await _windowsService.stopStudyMode();
+      print('[StudyMode] ✅ Windows study mode stopped');
+    }
   }
 
-  Future<void> updateBlockedApps(String blockedAppsString) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyBlockedApps, blockedAppsString);
-    print('🚫 StudyModeService: Blocked apps updated = $blockedAppsString');
-    await _logCurrentState();
+  /// Block a specific app immediately
+  Future<void> blockApp(String processName) async {
+    if (isWindows && _windowsService.isConnected) {
+      await _windowsService.blockApp(processName);
+    }
   }
 
-  Future<void> _logCurrentState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final studyMode = prefs.getBool(_keyStudyMode) ?? false;
-    final blockedApps = prefs.getString(_keyBlockedApps) ?? '';
-    print('📋 === SharedPreferences State ===');
-    print('Study Mode: $studyMode');
-    print('Blocked Apps: $blockedApps');
-    print('==================================');
+  /// Get usage summary
+  Future<void> refreshUsage() async {
+    if (isWindows && _windowsService.isConnected) {
+      await _windowsService.getUsageSummary();
+    }
+  }
+
+  /// Dispose
+  void dispose() {
+    _windowsService.dispose();
   }
 }

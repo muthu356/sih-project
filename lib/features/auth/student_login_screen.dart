@@ -14,117 +14,173 @@ class StudentLoginScreen extends StatefulWidget {
   State<StudentLoginScreen> createState() => _StudentLoginScreenState();
 }
 
-class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTickerProviderStateMixin {
+class _StudentLoginScreenState extends State<StudentLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _studentIdController = TextEditingController();
-  final VoiceService _voiceService = VoiceService();
+  late final VoiceService _voiceService;
+  
   bool _isLoading = false;
-  bool _isListeningForId = false;
-  bool _isAskingBlindMode = false;
-  late AnimationController _animController;
-  late Animation<double> _fadeAnimation;
+  bool _isListening = false;
+  bool _isBlindMode = false;
+  bool _blindModeDetected = false;
+  bool _inputsEnabled = false;
+  
+  String _statusText = 'Checking accessibility mode...';
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
-    _animController.forward();
+    _voiceService = VoiceService();
     
-    // Announce for blind students
-    _announceScreen();
+    print('[StudentLogin] Screen initialized');
+    _askIfBlindImmediately();
   }
 
-  Future<void> _announceScreen() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    await _voiceService.speak('Student login. Please say your student ID or type it.');
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    _studentIdController.dispose();
-    _voiceService.stop();
-    _voiceService.stopListening();
-    super.dispose();
-  }
-
-  Future<void> _listenForStudentId() async {
-    setState(() => _isListeningForId = true);
-    
-    await _voiceService.speak('Please say your student ID');
-    final id = await _voiceService.listen(timeout: const Duration(seconds: 6));
-    
-    setState(() => _isListeningForId = false);
-    
-    if (id != null && id.isNotEmpty) {
-      // Remove spaces and convert to uppercase (e.g., "S T 1 0 1" -> "ST101")
-      final cleanId = id.replaceAll(' ', '').toUpperCase();
-      _studentIdController.text = cleanId;
-      await _voiceService.speak('Student ID entered as $cleanId. Logging in.');
-      await _login();
-    } else {
-      await _voiceService.speak('I did not catch that. Please try again.');
-    }
-  }
-
-  /// CRITICAL: Voice-first blind mode detection
-  /// After login, ask "Are you blind?" and listen for response
-  /// No touches needed - completely hands-free
-  Future<void> _askIfBlindAndNavigate(String studentId) async {
+  /// Ask "Are you blind?" using continuous listening
+  Future<void> _askIfBlindImmediately() async {
+    await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     
-    setState(() => _isAskingBlindMode = true);
+    print('[StudentLogin] Starting blind mode detection...');
     
-    // Ask the question
+    setState(() {
+      _isListening = true;
+      _statusText = 'Are you blind? Say YES or NO';
+    });
+    
     await _voiceService.speak('Are you blind? Say yes or no.');
-    
-    // Listen for response - 8 seconds to give time to respond
-    final response = await _voiceService.listen(timeout: const Duration(seconds: 8));
-    
     if (!mounted) return;
-    setState(() => _isAskingBlindMode = false);
     
-    // Check if user said yes
-    final lowerResponse = response?.toLowerCase() ?? '';
-    final isBlind = lowerResponse.contains('yes') || 
-                    lowerResponse.contains('yeah') || 
-                    lowerResponse.contains('yep') ||
-                    lowerResponse.contains('blind');
+    await _voiceService.waitForSpeech();
+    if (!mounted) return;
     
-    if (isBlind) {
-      await _voiceService.speak('Entering voice mode.');
-      
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StudentBlindMode(studentId: studentId),
-          ),
-          (route) => false,
-        );
-      }
-    } else {
-      // No response, timeout, or said "no" - go to visual dashboard
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StudentDashboard(studentId: studentId),
-          ),
-          (route) => false,
-        );
-      }
+    print('[StudentLogin] Waiting for yes/no response...');
+    
+    // Use continuous listening - auto-detects speech and stops after 3-sec pause
+    await _voiceService.startContinuousListening(
+      onResult: (response) async {
+        if (!mounted) return;
+        
+        print('[StudentLogin] Got response for blind mode: "$response"');
+        
+        final lowerResponse = response.toLowerCase();
+        final isBlind = lowerResponse.contains('yes') || 
+                        lowerResponse.contains('yeah') || 
+                        lowerResponse.contains('yep') ||
+                        lowerResponse.contains('blind');
+        
+        await _voiceService.stopContinuousListening();
+        
+        if (!mounted) return;
+        
+        setState(() {
+          _isListening = false;
+          _isBlindMode = isBlind;
+          _blindModeDetected = true;
+        });
+        
+        if (isBlind) {
+          print('[StudentLogin] ✅ Blind mode ENABLED');
+          await _voiceService.speak('Voice mode activated. Please say your student ID.');
+          if (!mounted) return;
+          
+          setState(() => _statusText = 'Voice mode active. Say your student ID');
+          await _listenForStudentIdContinuous();
+        } else {
+          print('[StudentLogin] ❌ Blind mode DISABLED - normal mode');
+          await _voiceService.speak('Normal mode. You can now type your student ID.');
+          if (!mounted) return;
+          
+          setState(() {
+            _statusText = 'Type your student ID to login';
+            _inputsEnabled = true;
+          });
+        }
+      },
+      onListeningStarted: () {
+        print('[StudentLogin] 🎤 Listening for yes/no...');
+      },
+    );
+    
+    // Timeout fallback (30 seconds max)
+    await Future.delayed(const Duration(seconds: 30));
+    if (!mounted) return;
+    
+    if (!_blindModeDetected) {
+      print('[StudentLogin] ⏱️ Timeout - defaulting to normal mode');
+      await _voiceService.stopContinuousListening();
+      setState(() {
+        _isListening = false;
+        _blindModeDetected = true;
+        _inputsEnabled = true;
+        _statusText = 'Timeout. Type your student ID';
+      });
     }
   }
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+  /// Continuous listening for Student ID
+  Future<void> _listenForStudentIdContinuous() async {
+    if (!mounted) return;
+    
+    print('[StudentLogin] Starting continuous listening for student ID...');
+    
+    setState(() {
+      _isListening = true;
+      _statusText = 'Listening for student ID...';
+    });
+    
+    await _voiceService.speak('Say your student ID now.');
+    if (!mounted) return;
+    
+    await _voiceService.waitForSpeech();
+    if (!mounted) return;
+    
+    // Continuous listening - auto-captures ID and processes after 3-sec pause
+    await _voiceService.startContinuousListening(
+      onResult: (studentId) async {
+        if (!mounted) return;
+        
+        final cleanId = studentId.replaceAll(' ', '').toUpperCase();
+        print('[StudentLogin] 🎯 Captured student ID: "$cleanId"');
+        
+        _studentIdController.text = cleanId;
+        
+        await _voiceService.stopContinuousListening();
+        
+        if (!mounted) return;
+        
+        setState(() {
+          _isListening = false;
+          _statusText = 'Student ID: $cleanId';
+        });
+        
+        await _voiceService.speak('You said $cleanId. Logging in now.');
+        if (!mounted) return;
+        
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
+        
+        await _loginWithVoice();
+      },
+      onListeningStarted: () {
+        print('[StudentLogin] 🎤 Listening for student ID...');
+      },
+    );
+  }
+
+  Future<void> _loginWithVoice() async {
+    if (!mounted) return;
+    
+    if (_studentIdController.text.trim().isEmpty) {
+      print('[StudentLogin] ❌ Student ID is empty');
+      await _voiceService.speak('Student ID is empty. Please try again.');
+      if (!mounted) return;
+      await _listenForStudentIdContinuous();
+      return;
+    }
 
     setState(() => _isLoading = true);
+    print('[StudentLogin] Attempting login with ID: ${_studentIdController.text.trim()}');
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -132,35 +188,101 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
       
       final studentId = _studentIdController.text.trim();
       
-      // Sign in
       final user = await authService.signInAsStudent(studentId);
 
       if (user != null && mounted) {
-        // Fetch student data to verify exists
         final student = await dbService.getStudent(studentId);
         
         if (student == null) {
           throw Exception('Student not found');
         }
         
-        // CRITICAL: Ask if blind via voice instead of checking stored field
-        await _voiceService.speak('Login successful.');
-        await _askIfBlindAndNavigate(studentId);
+        print('[StudentLogin] ✅ Login successful for $studentId');
+        await _voiceService.speak('Login successful. Entering voice mode.');
+        
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StudentBlindMode(studentId: studentId),
+            ),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
+      print('[StudentLogin] ❌ Login failed: $e');
       if (mounted) {
-        final errorMsg = 'Login failed: ${e.toString()}';
+        await _voiceService.speak('Login failed. Student ID not found. Please try again.');
+        setState(() {
+          _statusText = 'Login failed. Try again';
+          _studentIdController.clear();
+        });
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red.shade400),
-        );
-        
-        // Announce error for blind students
-        _voiceService.speak('Login failed. Please check your student ID and try again.');
+        await Future.delayed(const Duration(seconds: 2));
+        if (!mounted) return;
+        await _listenForStudentIdContinuous();
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _loginNormal() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    print('[StudentLogin] Normal login with ID: ${_studentIdController.text.trim()}');
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      
+      final studentId = _studentIdController.text.trim();
+      
+      final user = await authService.signInAsStudent(studentId);
+
+      if (user != null && mounted) {
+        final student = await dbService.getStudent(studentId);
+        
+        if (student == null) {
+          throw Exception('Student not found');
+        }
+        
+        print('[StudentLogin] ✅ Login successful (normal mode)');
+        
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StudentDashboard(studentId: studentId),
+            ),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      print('[StudentLogin] ❌ Login failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login failed: ${e.toString()}'),
+            backgroundColor: Colors.red.shade400,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    print('[StudentLogin] Disposing...');
+    _studentIdController.dispose();
+    _voiceService.stop();
+    _voiceService.stopContinuousListening();
+    super.dispose();
   }
 
   @override
@@ -169,194 +291,198 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
       body: Container(
         decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
         child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 20),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(40),
-                        topRight: Radius.circular(40),
-                      ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(32),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Icon(Icons.person, size: 70, color: AppTheme.primaryLight),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Student Login',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Enter your Student ID',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 40),
-                            
-                            // Student ID field with voice button
-                            TextFormField(
-                              controller: _studentIdController,
-                              decoration: InputDecoration(
-                                labelText: 'Student ID',
-                                prefixIcon: const Icon(Icons.badge_outlined),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _isListeningForId ? Icons.mic : Icons.mic_none,
-                                    color: _isListeningForId ? Colors.red : AppTheme.primaryLight,
-                                  ),
-                                  onPressed: _isListeningForId ? null : _listenForStudentId,
-                                  tooltip: 'Speak your Student ID',
+                  ],
+                ),
+              ),
+              
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(40),
+                      topRight: Radius.circular(40),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(32),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Icon(
+                            _isListening ? Icons.mic : Icons.person,
+                            size: 70,
+                            color: _isListening ? Colors.red : AppTheme.primaryLight,
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Student Login',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your student ID';
-                                }
-                                return null;
-                              },
-                            ),
-                            
-                            if (_isListeningForId)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.mic, color: Colors.red, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Listening for ID...',
-                                      style: TextStyle(color: Colors.red.shade400),
-                                    ),
-                                  ],
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _statusText,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: _isListening ? Colors.red.shade600 : Colors.grey.shade600,
+                                  fontWeight: _isListening ? FontWeight.bold : FontWeight.normal,
                                 ),
-                              ),
-                            
-                            // Show when asking blind mode question
-                            if (_isAskingBlindMode)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryLight.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppTheme.primaryLight),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      const Icon(Icons.mic, color: Colors.red, size: 40),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        'Are you blind?',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Say YES or NO',
-                                        style: TextStyle(color: Colors.grey.shade600),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            
-                            const SizedBox(height: 32),
-                            
-                            // Login button
-                            SizedBox(
-                              height: 56,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryLight,
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 24,
-                                        width: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Login', style: TextStyle(fontSize: 16)),
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Voice login help
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 40),
+                          
+                          if (_isBlindMode && _blindModeDetected)
                             Container(
                               padding: const EdgeInsets.all(16),
+                              margin: const EdgeInsets.only(bottom: 24),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryLight.withOpacity(0.1),
+                                color: Colors.blue.shade50,
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.blue.shade300, width: 2),
                               ),
-                              child: Column(
+                              child: Row(
                                 children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.accessibility_new, color: AppTheme.primaryLight),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          'Voice Input Available',
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  Icon(Icons.accessibility_new, color: Colors.blue.shade700, size: 30),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Voice Mode Active',
+                                          style: TextStyle(
+                                            color: Colors.blue.shade700,
                                             fontWeight: FontWeight.bold,
+                                            fontSize: 16,
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Speak clearly. Will auto-capture after 3-sec pause.',
+                                          style: TextStyle(
+                                            color: Colors.blue.shade600,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  if (_isListening)
+                                    const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 3),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          
+                          IgnorePointer(
+                            ignoring: !_inputsEnabled,
+                            child: Opacity(
+                              opacity: _inputsEnabled ? 1.0 : 0.4,
+                              child: TextFormField(
+                                controller: _studentIdController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Student ID',
+                                  prefixIcon: Icon(Icons.badge_outlined),
+                                ),
+                                readOnly: !_inputsEnabled,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your student ID';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                          
+                          if (_isListening)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.mic, color: Colors.red, size: 20),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    'Tap the microphone or just login - after login, you will be asked "Are you blind?" via voice. Say YES for voice mode.',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    'Listening... (auto-process after 3-sec pause)',
+                                    style: TextStyle(color: Colors.red.shade400, fontSize: 12),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
+                          
+                          const SizedBox(height: 32),
+                          
+                          SizedBox(
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: (_isLoading || !_inputsEnabled) ? null : _loginNormal,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryLight,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Login', style: TextStyle(fontSize: 16)),
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryLight.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline, color: AppTheme.primaryLight),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _blindModeDetected 
+                                        ? (_isBlindMode 
+                                            ? 'Voice mode: Speak clearly. Auto-captures after 3-sec pause.' 
+                                            : 'Normal mode: Type your student ID and tap Login.')
+                                        : 'Please wait while we check accessibility settings...',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

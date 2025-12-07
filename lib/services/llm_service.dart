@@ -6,7 +6,7 @@ class LLMService {
   
   LLMService({String? apiKey}) {
     _model = GenerativeModel(
-      model: 'Gemini 2.5 Flash',
+      model: 'gemini-2.0-flash-exp',
       apiKey: apiKey ?? _apiKey,
     );
   }

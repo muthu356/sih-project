@@ -1,406 +1,392 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:app_usage/app_usage.dart';
-import '../../services/database_service.dart';
-import '../../models/app_policy_model.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
+import '../../services/windows_monitoring_service.dart';
 import '../../core/theme.dart';
 
+/// App Blocking Screen for Windows Desktop
+/// Connects to Windows Agent to get running apps and block them
 class AppBlockingScreen extends StatefulWidget {
   final String studentId;
-  final String parentId;
-
-  const AppBlockingScreen({
-    Key? key,
-    required this.studentId,
-    required this.parentId,
-  }) : super(key: key);
+  const AppBlockingScreen({Key? key, required this.studentId}) : super(key: key);
 
   @override
   State<AppBlockingScreen> createState() => _AppBlockingScreenState();
 }
 
 class _AppBlockingScreenState extends State<AppBlockingScreen> {
-  List<AppUsageInfo> _installedApps = [];
-  Set<String> _blockedApps = {};
+  final WindowsMonitoringService _monitorService = WindowsMonitoringService();
+  
+  List<Map<String, dynamic>> _runningApps = [];
+  Set<String> _selectedApps = {};
   bool _isLoading = true;
-  bool _hasPermission = false;
-  String _permissionStatus = 'checking';
+  bool _isConnecting = false;
+  bool _isConnected = false;
+  String _statusMessage = 'Connecting to Windows Agent...';
 
   @override
   void initState() {
     super.initState();
-    _checkPermissionAndLoad();
+    _connectToAgent();
   }
 
-  Future<void> _checkPermissionAndLoad() async {
+  Future<void> _connectToAgent() async {
     setState(() {
-      _isLoading = true;
-      _permissionStatus = 'checking';
+      _isConnecting = true;
+      _statusMessage = 'Connecting to Windows Agent...';
     });
+
+    final connected = await _monitorService.connect();
     
-    try {
-      // Try to get app usage - this requires Usage Access permission on Android
-      final endDate = DateTime.now();
-      final startDate = endDate.subtract(const Duration(days: 1));
-      final apps = await AppUsage().getAppUsage(startDate, endDate);
-      
+    if (connected) {
       setState(() {
-        _hasPermission = true;
-        _installedApps = apps;
-        _permissionStatus = 'granted';
+        _isConnected = true;
+        _isConnecting = false;
+        _statusMessage = 'Connected! Loading apps...';
       });
-      
-      await _loadBlockedApps();
-    } catch (e) {
-      print('Permission error: $e');
+      await _loadRunningApps();
+    } else {
       setState(() {
-        _hasPermission = false;
-        _permissionStatus = 'denied';
+        _isConnected = false;
+        _isConnecting = false;
+        _isLoading = false;
+        _statusMessage = 'Failed to connect. Make sure the Windows Agent is running.';
       });
     }
-    
-    setState(() => _isLoading = false);
   }
 
-  Future<void> _openAppSettings() async {
+  Future<void> _loadRunningApps() async {
+    setState(() => _isLoading = true);
+    
     try {
-      // Open app settings using platform channel
-      const platform = MethodChannel('com.example.smartapp/app_settings');
-      await platform.invokeMethod('openUsageAccessSettings');
-    } catch (e) {
-      // Fallback: show instructions
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please go to Settings > Apps > Special Access > Usage Access and enable for this app'),
-            duration: Duration(seconds: 5),
-          ),
-        );
+      final apps = await _monitorService.getRunningApps();
+      
+      // Filter out system apps and group by process name
+      final Map<String, Map<String, dynamic>> uniqueApps = {};
+      for (var app in apps) {
+        final process = app['process'] as String? ?? '';
+        if (_isBlockableApp(process)) {
+          if (!uniqueApps.containsKey(process)) {
+            uniqueApps[process] = app;
+          }
+        }
       }
-    }
-    
-    // Refresh after returning from settings
-    await Future.delayed(const Duration(seconds: 1));
-    _checkPermissionAndLoad();
-  }
-
-  Future<void> _loadBlockedApps() async {
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final policy = await dbService.getAppPolicy(widget.studentId, widget.parentId);
-    
-    if (policy != null) {
-      setState(() => _blockedApps = policy.blockedApps.map((app) => app.packageName).toSet());
+      
+      setState(() {
+        _runningApps = uniqueApps.values.toList();
+        _isLoading = false;
+        _statusMessage = 'Found ${_runningApps.length} apps';
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _statusMessage = 'Error loading apps: $e';
+      });
     }
   }
 
-  Future<void> _savePolicy() async {
-    if (_blockedApps.isEmpty) {
+  bool _isBlockableApp(String processName) {
+    // Skip system processes
+    const systemApps = [
+      'explorer.exe', 'taskmgr.exe', 'systemsettings.exe',
+      'searchhost.exe', 'startmenuexperiencehost.exe',
+      'shellexperiencehost.exe', 'runtimebroker.exe',
+      'applicationframehost.exe', 'textinputhost.exe',
+      'smartscreen.exe', 'securityhealthservice.exe',
+      'sihost.exe', 'ctfmon.exe', 'dwm.exe',
+    ];
+    
+    final lower = processName.toLowerCase();
+    return !systemApps.contains(lower) && 
+           !lower.startsWith('windows') &&
+           !lower.contains('system') &&
+           processName.isNotEmpty;
+  }
+
+  Future<void> _startStudyMode() async {
+    if (_selectedApps.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please select at least one app to block, or go back.'),
-          backgroundColor: Colors.orange.shade400,
-        ),
+        const SnackBar(content: Text('Please select apps to block')),
       );
       return;
     }
+
+    await _monitorService.startStudyMode(_selectedApps.toList());
     
-    setState(() => _isLoading = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Study Mode started! ${_selectedApps.length} apps blocked.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    
+    Navigator.pop(context);
+  }
 
-    try {
-      final dbService = Provider.of<DatabaseService>(context, listen: false);
-      
-      final blockedAppsList = _blockedApps.map((packageName) {
-        // Find app name from installed apps
-        final appInfo = _installedApps.firstWhere(
-          (app) => app.packageName == packageName,
-          orElse: () => AppUsageInfo(packageName, 0, DateTime.now(), DateTime.now(), DateTime.now()),
-        );
-        return BlockedApp(
-          packageName: packageName,
-          appName: appInfo.appName,
-        );
-      }).toList();
-
-      final policy = AppPolicyModel(
-        policyId: '${widget.studentId}_${widget.parentId}',
-        studentId: widget.studentId,
-        parentId: widget.parentId,
-        blockedApps: blockedAppsList,
-        updatedAt: DateTime.now(),
-      );
-
-      await dbService.saveAppPolicy(policy);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_blockedApps.length} apps blocked successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  @override
+  void dispose() {
+    // Don't disconnect - keep agent running
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(gradient: AppTheme.purpleGradient),
-        ),
-        title: const Text('Block Apps', style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Block Apps'),
+        backgroundColor: AppTheme.primaryLight,
+        foregroundColor: Colors.white,
         actions: [
-          // Only show save when apps are visible and some are selected
-          if (_hasPermission && _installedApps.isNotEmpty)
-            TextButton(
-              onPressed: _isLoading ? null : _savePolicy,
-              child: const Text('SAVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _isConnected ? _loadRunningApps : _connectToAgent,
+            tooltip: 'Refresh',
+          ),
         ],
       ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading && _permissionStatus == 'checking') {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Checking permissions...'),
-          ],
-        ),
-      );
-    }
-
-    if (!_hasPermission) {
-      return _buildPermissionRequestUI();
-    }
-
-    if (_installedApps.isEmpty) {
-      return _buildNoAppsUI();
-    }
-
-    return _buildAppList();
-  }
-
-  Widget _buildPermissionRequestUI() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
         children: [
+          // Status bar
           Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.security, size: 80, color: Colors.orange.shade700),
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            'Permission Required',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'To block apps on your child\'s device, we need permission to see which apps are installed.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-          ),
-          const SizedBox(height: 32),
-          Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
+              color: _isConnected ? Colors.green.shade50 : Colors.orange.shade50,
+              border: Border(
+                bottom: BorderSide(
+                  color: _isConnected ? Colors.green.shade200 : Colors.orange.shade200,
+                ),
+              ),
             ),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue.shade700),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'How to enable:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                Icon(
+                  _isConnected ? Icons.check_circle : Icons.warning,
+                  color: _isConnected ? Colors.green : Colors.orange,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isConnected ? 'Windows Agent Connected' : 'Agent Not Connected',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _isConnected ? Colors.green.shade700 : Colors.orange.shade700,
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        _statusMessage,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  '1. Tap "Open Settings" below\n'
-                  '2. Find "EduGuardian" in the list\n'
-                  '3. Toggle the switch to enable\n'
-                  '4. Return to this screen',
-                  style: TextStyle(height: 1.5),
-                ),
+                if (_isConnecting)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton.icon(
-              onPressed: _openAppSettings,
-              icon: const Icon(Icons.settings),
-              label: const Text('Open Settings', style: TextStyle(fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryLight,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: _checkPermissionAndLoad,
-            child: const Text('I\'ve enabled it, refresh'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildNoAppsUI() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.apps, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            'No apps found',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 18),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Apps will appear here once the student\nuses their device',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade400),
-          ),
-          const SizedBox(height: 24),
-          TextButton.icon(
-            onPressed: _checkPermissionAndLoad,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppList() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: AppTheme.purpleGradient,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
-            ),
-          ),
-          child: Column(
-            children: [
-              const Icon(Icons.block, size: 50, color: Colors.white),
-              const SizedBox(height: 12),
-              const Text(
-                'Select Apps to Block',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+          // Instructions
+          if (!_isConnected)
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade200),
               ),
-              const SizedBox(height: 8),
-              Text(
-                '${_blockedApps.length} of ${_installedApps.length} apps selected',
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ],
-          ),
-        ),
-        if (_isLoading)
-          const LinearProgressIndicator(),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _installedApps.length,
-            itemBuilder: (context, index) {
-              final app = _installedApps[index];
-              final isBlocked = _blockedApps.contains(app.packageName);
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: isBlocked 
-                      ? BorderSide(color: Colors.red.shade300, width: 2)
-                      : BorderSide.none,
-                ),
-                child: CheckboxListTile(
-                  value: isBlocked,
-                  onChanged: (value) {
-                    setState(() {
-                      if (value == true) {
-                        _blockedApps.add(app.packageName);
-                      } else {
-                        _blockedApps.remove(app.packageName);
-                      }
-                    });
-                  },
-                  title: Text(
-                    app.appName,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700),
+                      const SizedBox(width: 8),
+                      Text(
+                        'How to Start Windows Agent',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '1. Open folder: windows_agent\n'
+                    '2. Run: start_agent.bat\n'
+                    '3. Wait for "Server running" message\n'
+                    '4. Click Refresh in this app',
                     style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: isBlocked ? Colors.red.shade700 : null,
+                      color: Colors.blue.shade800,
+                      height: 1.5,
                     ),
                   ),
-                  subtitle: Text(
-                    app.packageName,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  secondary: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isBlocked
-                          ? Colors.red.shade50
-                          : Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      isBlocked ? Icons.block : Icons.check_circle,
-                      color: isBlocked ? Colors.red : Colors.green,
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: _connectToAgent,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry Connection'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
                     ),
                   ),
-                  activeColor: AppTheme.accentPink,
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+                ],
+              ),
+            ),
+
+          // App list
+          if (_isConnected)
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _runningApps.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.apps, size: 64, color: Colors.grey.shade400),
+                              const SizedBox(height: 16),
+                              const Text('No blockable apps found'),
+                              TextButton.icon(
+                                onPressed: _loadRunningApps,
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Refresh'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _runningApps.length,
+                          itemBuilder: (context, index) {
+                            final app = _runningApps[index];
+                            final process = app['process'] as String? ?? '';
+                            final title = app['title'] as String? ?? process;
+                            final memory = app['memory_mb'] ?? 0;
+                            final isSelected = _selectedApps.contains(process);
+                            
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: CheckboxListTile(
+                                value: isSelected,
+                                onChanged: (value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      _selectedApps.add(process);
+                                    } else {
+                                      _selectedApps.remove(process);
+                                    }
+                                  });
+                                },
+                                title: Text(
+                                  _getAppDisplayName(process),
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                                subtitle: Text(
+                                  '$process • ${memory}MB',
+                                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                ),
+                                secondary: _getAppIcon(process),
+                                activeColor: Colors.red,
+                              ),
+                            );
+                          },
+                        ),
+            ),
+
+          // Bottom bar
+          if (_isConnected && _runningApps.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade300,
+                    offset: const Offset(0, -2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${_selectedApps.length} of ${_runningApps.length} apps selected',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _selectedApps.isNotEmpty ? _startStudyMode : null,
+                    icon: const Icon(Icons.block),
+                    label: const Text('Start Study Mode'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _getAppDisplayName(String processName) {
+    final displayNames = {
+      'chrome.exe': 'Google Chrome',
+      'firefox.exe': 'Mozilla Firefox',
+      'msedge.exe': 'Microsoft Edge',
+      'discord.exe': 'Discord',
+      'slack.exe': 'Slack',
+      'spotify.exe': 'Spotify',
+      'code.exe': 'VS Code',
+      'notepad.exe': 'Notepad',
+      'vlc.exe': 'VLC Player',
+      'steam.exe': 'Steam',
+      'epicgameslauncher.exe': 'Epic Games',
+      'whatsapp.exe': 'WhatsApp',
+      'telegram.exe': 'Telegram',
+      'zoom.exe': 'Zoom',
+      'teams.exe': 'Microsoft Teams',
+    };
+    
+    return displayNames[processName.toLowerCase()] ?? 
+           processName.replaceAll('.exe', '').replaceAll('_', ' ');
+  }
+
+  Widget _getAppIcon(String processName) {
+    final iconMap = {
+      'chrome.exe': Icons.public,
+      'firefox.exe': Icons.public,
+      'msedge.exe': Icons.public,
+      'discord.exe': Icons.chat,
+      'slack.exe': Icons.chat,
+      'spotify.exe': Icons.music_note,
+      'code.exe': Icons.code,
+      'steam.exe': Icons.games,
+      'zoom.exe': Icons.video_call,
+      'teams.exe': Icons.groups,
+    };
+    
+    final icon = iconMap[processName.toLowerCase()] ?? Icons.apps;
+    return CircleAvatar(
+      backgroundColor: Colors.grey.shade200,
+      child: Icon(icon, color: Colors.grey.shade700),
     );
   }
 }
