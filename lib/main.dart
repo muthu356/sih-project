@@ -9,6 +9,7 @@ import 'features/auth/role_selection_screen.dart';
 import 'features/auth/parent_login_screen.dart';
 import 'features/auth/teacher_login_screen.dart';
 import 'features/auth/student_login_screen.dart';
+import 'features/teacher_dashboard/presentation/pages/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
           '/parent-login': (context) => const ParentLoginScreen(),
           '/teacher-login': (context) => const TeacherLoginScreen(),
           '/student-login': (context) => const StudentLoginScreen(),
+          '/teacher-dashboard': (context) => const DashboardScreen(),
         },
       ),
     );
