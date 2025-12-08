@@ -7,13 +7,14 @@ import 'parent_signup_screen.dart';
 import '../../core/theme.dart';
 
 class ParentLoginScreen extends StatefulWidget {
-  const ParentLoginScreen({Key? key}) : super(key: key);
+  const ParentLoginScreen({super.key});
 
   @override
   State<ParentLoginScreen> createState() => _ParentLoginScreenState();
 }
 
-class _ParentLoginScreenState extends State<ParentLoginScreen> with SingleTickerProviderStateMixin {
+class _ParentLoginScreenState extends State<ParentLoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -29,7 +30,10 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> with SingleTicker
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeIn,
+    );
     _animController.forward();
   }
 
@@ -96,7 +100,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> with SingleTicker
                     ],
                   ),
                 ),
-                
+
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.only(top: 20),
@@ -114,25 +118,27 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> with SingleTicker
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Icon(Icons.family_restroom, size: 70, color: AppTheme.primaryLight),
+                            const Icon(
+                              Icons.family_restroom,
+                              size: 70,
+                              color: AppTheme.primaryLight,
+                            ),
                             const SizedBox(height: 24),
                             Text(
                               'Welcome Back, Parent',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Sign in to monitor your child',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey,
-                                  ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.grey),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 40),
-                            
+
                             // Email field
                             TextFormField(
                               controller: _emailController,
@@ -142,13 +148,17 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> with SingleTicker
                               ),
                               keyboardType: TextInputType.emailAddress,
                               validator: (value) {
-                                if (value == null || value.isEmpty) return 'Please enter your email';
-                                if (!value.contains('@')) return 'Please enter a valid email';
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your email';
+                                }
+                                if (!value.contains('@')) {
+                                  return 'Please enter a valid email';
+                                }
                                 return null;
                               },
                             ),
                             const SizedBox(height: 20),
-                            
+
                             // Password field
                             TextFormField(
                               controller: _passwordController,
@@ -156,19 +166,32 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> with SingleTicker
                                 labelText: 'Password',
                                 prefixIcon: const Icon(Icons.lock_outlined),
                                 suffixIcon: IconButton(
-                                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  onPressed:
+                                      () => setState(
+                                        () =>
+                                            _obscurePassword =
+                                                !_obscurePassword,
+                                      ),
                                 ),
                               ),
                               obscureText: _obscurePassword,
                               validator: (value) {
-                                if (value == null || value.isEmpty) return 'Please enter your password';
-                                if (value.length < 6) return 'Password must be at least 6 characters';
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your password';
+                                }
+                                if (value.length < 6) {
+                                  return 'Password must be at least 6 characters';
+                                }
                                 return null;
                               },
                             ),
                             const SizedBox(height: 32),
-                            
+
                             // Login button
                             SizedBox(
                               height: 56,
@@ -177,28 +200,45 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> with SingleTicker
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryLight,
                                 ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 24,
-                                        width: 24,
-                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                      )
-                                    : const Text('Sign In', style: TextStyle(fontSize: 16)),
+                                child:
+                                    _isLoading
+                                        ? const SizedBox(
+                                          height: 24,
+                                          width: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : const Text(
+                                          'Sign In',
+                                          style: TextStyle(fontSize: 16),
+                                        ),
                               ),
                             ),
                             const SizedBox(height: 20),
-                            
+
                             // Signup link
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Text('Don\'t have an account? '),
                                 TextButton(
-                                  onPressed: () => Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const ParentSignupScreen()),
+                                  onPressed:
+                                      () => Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) =>
+                                                  const ParentSignupScreen(),
+                                        ),
+                                      ),
+                                  child: const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.bold)),
                                 ),
                               ],
                             ),

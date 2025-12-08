@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import '../../services/database_service.dart';
 import '../../services/llm_service.dart';
-import '../../models/assignment_model.dart';
 import '../../core/theme.dart';
 
 class StudentAIAssistScreen extends StatefulWidget {
   final String studentId;
-  const StudentAIAssistScreen({Key? key, required this.studentId}) : super(key: key);
+  const StudentAIAssistScreen({super.key, required this.studentId});
 
   @override
   State<StudentAIAssistScreen> createState() => _StudentAIAssistScreenState();
@@ -49,7 +45,10 @@ class _StudentAIAssistScreenState extends State<StudentAIAssistScreen> {
       _scrollToBottom();
     } catch (e) {
       setState(() {
-        _messages.add({'role': 'assistant', 'text': 'Sorry, I encountered an error. Please try again.'});
+        _messages.add({
+          'role': 'assistant',
+          'text': 'Sorry, I encountered an error. Please try again.',
+        });
         _isLoading = false;
       });
     }
@@ -86,7 +85,11 @@ class _StudentAIAssistScreenState extends State<StudentAIAssistScreen> {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.psychology, color: Colors.white, size: 28),
+                    child: const Icon(
+                      Icons.psychology,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
@@ -115,39 +118,47 @@ class _StudentAIAssistScreenState extends State<StudentAIAssistScreen> {
 
           // Messages
           Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.school, size: 80, color: Colors.grey.shade300),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Ask me a question!',
-                          style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'I can help with homework, concepts, and more',
-                          style: TextStyle(color: Colors.grey.shade400),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+            child:
+                _messages.isEmpty
+                    ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.school,
+                            size: 80,
+                            color: Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Ask me a question!',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'I can help with homework, concepts, and more',
+                            style: TextStyle(color: Colors.grey.shade400),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                    : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final message = _messages[index];
+                        final isUser = message['role'] == 'user';
+                        return _MessageBubble(
+                          text: message['text']!,
+                          isUser: isUser,
+                        );
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final message = _messages[index];
-                      final isUser = message['role'] == 'user';
-                      return _MessageBubble(
-                        text: message['text']!,
-                        isUser: isUser,
-                      );
-                    },
-                  ),
           ),
 
           if (_isLoading)
@@ -165,7 +176,10 @@ class _StudentAIAssistScreenState extends State<StudentAIAssistScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('Thinking...', style: TextStyle(color: Colors.grey.shade600)),
+                  Text(
+                    'Thinking...',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
                 ],
               ),
             ),
@@ -197,7 +211,10 @@ class _StudentAIAssistScreenState extends State<StudentAIAssistScreen> {
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                       ),
                       maxLines: null,
                       textCapitalization: TextCapitalization.sentences,
@@ -236,14 +253,19 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
             CircleAvatar(
               radius: 16,
               backgroundColor: AppTheme.primaryLight,
-              child: const Icon(Icons.psychology, color: Colors.white, size: 18),
+              child: const Icon(
+                Icons.psychology,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 8),
           ],

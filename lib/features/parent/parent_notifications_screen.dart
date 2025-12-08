@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../services/notification_service.dart';
 import '../../models/notification_model.dart';
 
 class ParentNotificationsScreen extends StatelessWidget {
   final String parentId;
-  const ParentNotificationsScreen({Key? key, required this.parentId}) : super(key: key);
+  const ParentNotificationsScreen({super.key, required this.parentId});
 
   @override
   Widget build(BuildContext context) {
@@ -21,19 +20,25 @@ class ParentNotificationsScreen extends StatelessWidget {
             builder: (context, snapshot) {
               final count = snapshot.data ?? 0;
               if (count == 0) return const SizedBox.shrink();
-              
+
               return Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '$count',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -71,7 +76,9 @@ class ParentNotificationsScreen extends StatelessWidget {
                 notification: notification,
                 onTap: () async {
                   if (!notification.isRead) {
-                    await notificationService.markAsRead(notification.notificationId);
+                    await notificationService.markAsRead(
+                      notification.notificationId,
+                    );
                   }
                 },
               );
@@ -87,10 +94,7 @@ class _NotificationCard extends StatelessWidget {
   final NotificationModel notification;
   final VoidCallback onTap;
 
-  const _NotificationCard({
-    required this.notification,
-    required this.onTap,
-  });
+  const _NotificationCard({required this.notification, required this.onTap});
 
   IconData _getIcon() {
     switch (notification.type) {
@@ -133,7 +137,8 @@ class _NotificationCard extends StatelessWidget {
         title: Text(
           notification.title,
           style: TextStyle(
-            fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+            fontWeight:
+                notification.isRead ? FontWeight.normal : FontWeight.bold,
           ),
         ),
         subtitle: Column(
@@ -143,7 +148,9 @@ class _NotificationCard extends StatelessWidget {
             Text(notification.message),
             const SizedBox(height: 4),
             Text(
-              DateFormat('MMM dd, yyyy • hh:mm a').format(notification.createdAt),
+              DateFormat(
+                'MMM dd, yyyy • hh:mm a',
+              ).format(notification.createdAt),
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
