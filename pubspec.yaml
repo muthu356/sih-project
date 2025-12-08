@@ -66,6 +66,7 @@ dependencies:
   
   # For opening settings (Existing)
   app_settings: ^5.1.1
+  lottie: ^3.3.2
 
 dev_dependencies:
   flutter_test:
