@@ -4,7 +4,7 @@ import '../../services/database_service.dart';
 
 class TeacherAddStudentScreen extends StatefulWidget {
   final String teacherId;
-  const TeacherAddStudentScreen({Key? key, required this.teacherId}) : super(key: key);
+  const TeacherAddStudentScreen({super.key, required this.teacherId});
 
   @override
   State<TeacherAddStudentScreen> createState() => _TeacherAddStudentScreenState();

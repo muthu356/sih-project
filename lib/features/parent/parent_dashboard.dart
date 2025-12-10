@@ -13,7 +13,7 @@ import 'student_progress_screen.dart';
 import '../../core/theme.dart';
 
 class ParentDashboard extends StatefulWidget {
-  const ParentDashboard({Key? key}) : super(key: key);
+  const ParentDashboard({super.key});
 
   @override
   State<ParentDashboard> createState() => _ParentDashboardState();
@@ -35,14 +35,19 @@ class _ParentDashboardState extends State<ParentDashboard> {
         flexibleSpace: Container(
           decoration: BoxDecoration(gradient: AppTheme.purpleGradient),
         ),
-        title: const Text('Parent Dashboard', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Parent Dashboard',
+          style: TextStyle(color: Colors.white),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await authService.signOut();
-              if (mounted) Navigator.pushReplacementNamed(context, '/');
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
             },
           ),
         ],
@@ -60,34 +65,43 @@ class _ParentDashboardState extends State<ParentDashboard> {
         stream: dbService.getUnreadChatCount(parentId),
         builder: (context, chatSnapshot) {
           final unreadChatCount = chatSnapshot.data ?? 0;
-          
+
           return StreamBuilder<int>(
             stream: notificationService.getUnreadCount(parentId),
             builder: (context, notifSnapshot) {
               final unreadNotifCount = notifSnapshot.data ?? 0;
-              
+
               return NavigationBar(
                 selectedIndex: _selectedIndex,
-                onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+                onDestinationSelected:
+                    (index) => setState(() => _selectedIndex = index),
                 destinations: [
-                  const NavigationDestination(icon: Icon(Icons.people), label: 'Students'),
-                  const NavigationDestination(icon: Icon(Icons.assignment), label: 'Assignments'),
+                  const NavigationDestination(
+                    icon: Icon(Icons.people),
+                    label: 'Students',
+                  ),
+                  const NavigationDestination(
+                    icon: Icon(Icons.assignment),
+                    label: 'Assignments',
+                  ),
                   NavigationDestination(
-                    icon: unreadChatCount > 0
-                        ? Badge(
-                            label: Text('$unreadChatCount'),
-                            child: const Icon(Icons.chat),
-                          )
-                        : const Icon(Icons.chat),
+                    icon:
+                        unreadChatCount > 0
+                            ? Badge(
+                              label: Text('$unreadChatCount'),
+                              child: const Icon(Icons.chat),
+                            )
+                            : const Icon(Icons.chat),
                     label: 'Chats',
                   ),
                   NavigationDestination(
-                    icon: unreadNotifCount > 0
-                        ? Badge(
-                            label: Text('$unreadNotifCount'),
-                            child: const Icon(Icons.notifications),
-                          )
-                        : const Icon(Icons.notifications),
+                    icon:
+                        unreadNotifCount > 0
+                            ? Badge(
+                              label: Text('$unreadNotifCount'),
+                              child: const Icon(Icons.notifications),
+                            )
+                            : const Icon(Icons.notifications),
                     label: 'Alerts',
                   ),
                 ],
@@ -96,17 +110,22 @@ class _ParentDashboardState extends State<ParentDashboard> {
           );
         },
       ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddStudentScreen(parentId: parentId)),
-              ),
-              icon: const Icon(Icons.person_add),
-              label: const Text('Add Student'),
-              backgroundColor: AppTheme.primaryLight,
-            )
-          : null,
+      floatingActionButton:
+          _selectedIndex == 0
+              ? FloatingActionButton.extended(
+                onPressed:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => AddStudentScreen(parentId: parentId),
+                      ),
+                    ),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Add Student'),
+                backgroundColor: AppTheme.primaryLight,
+              )
+              : null,
     );
   }
 }
@@ -131,7 +150,11 @@ class _StudentsTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.people_outline, size: 100, color: Colors.grey.shade300),
+                Icon(
+                  Icons.people_outline,
+                  size: 100,
+                  color: Colors.grey.shade300,
+                ),
                 const SizedBox(height: 24),
                 Text(
                   'No students yet',
@@ -155,14 +178,18 @@ class _StudentsTab extends StatelessWidget {
             return Card(
               elevation: 2,
               margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Column(
                 children: [
                   ListTile(
                     contentPadding: const EdgeInsets.all(16),
                     leading: CircleAvatar(
                       radius: 28,
-                      backgroundColor: AppTheme.primaryLight.withOpacity(0.1),
+                      backgroundColor: AppTheme.primaryLight.withValues(
+                        alpha: 0.1,
+                      ),
                       child: Text(
                         student.fullName[0].toUpperCase(),
                         style: const TextStyle(
@@ -174,7 +201,10 @@ class _StudentsTab extends StatelessWidget {
                     ),
                     title: Text(
                       student.fullName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,14 +214,20 @@ class _StudentsTab extends StatelessWidget {
                         if (student.isBlind)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.blue.shade50,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Voice mode',
-                              style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.blue.shade700,
+                              ),
                             ),
                           ),
                       ],
@@ -199,29 +235,37 @@ class _StudentsTab extends StatelessWidget {
                     trailing: IconButton(
                       icon: const Icon(Icons.block),
                       color: AppTheme.accentOrange,
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AppBlockingScreen(
-                            studentId: student.studentId,
-                            parentId: parentId,
+                      onPressed:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => AppBlockingScreen(
+                                    studentId: student.studentId,
+                                    parentId: parentId,
+                                  ),
+                            ),
                           ),
-                        ),
-                      ),
                     ),
                   ),
                   const Divider(height: 1),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => StudentProgressScreen(student: student),
-                          ),
-                        ),
+                        onPressed:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        StudentProgressScreen(student: student),
+                              ),
+                            ),
                         icon: const Icon(Icons.bar_chart),
                         label: const Text('View Progress'),
                         style: OutlinedButton.styleFrom(

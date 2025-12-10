@@ -6,7 +6,7 @@ import '../../models/assignment_model.dart';
 
 class TeacherAssignmentScreen extends StatelessWidget {
   final String teacherId;
-  const TeacherAssignmentScreen({Key? key, required this.teacherId}) : super(key: key);
+  const TeacherAssignmentScreen({super.key, required this.teacherId});
 
   @override
   Widget build(BuildContext context) {

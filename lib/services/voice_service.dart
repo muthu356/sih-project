@@ -1,10 +1,12 @@
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VoiceService {
   final FlutterTts _tts = FlutterTts();
   final stt.SpeechToText _speech = stt.SpeechToText();
-  
+
   bool _isListening = false;
   bool _speechAvailable = false;
 
@@ -16,20 +18,29 @@ class VoiceService {
   Future<void> _initTTS() async {
     await _tts.setLanguage('en-US');
     await _tts.setSpeechRate(0.5);
-    await _tts.setVolume(1.0);
     await _tts.setPitch(1.0);
+    await _tts.awaitSpeakCompletion(true);
   }
 
   Future<void> _initSTT() async {
     _speechAvailable = await _speech.initialize(
-      onStatus: (status) => print('Speech status: $status'),
-      onError: (error) => print('Speech error: $error'),
+      onStatus: (status) => debugPrint('Speech status: $status'),
+      onError: (error) => debugPrint('Speech error: $error'),
     );
   }
 
   // Text to Speech
   Future<void> speak(String text) async {
-    await _tts.speak(text);
+    // Add timeout to prevent hanging if TTS completion callback fails
+    await _tts
+        .speak(text)
+        .timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            debugPrint('TTS speak timed out for text: $text');
+            return;
+          },
+        );
   }
 
   Future<void> stop() async {
@@ -37,17 +48,37 @@ class VoiceService {
   }
 
   // Speech to Text
-  Future<String?> listen({Duration? timeout}) async {
+  Future<String?> listen({
+    Duration? timeout,
+    Function(String)? onPartialResult,
+  }) async {
     // Re-initialize if not available
+
     if (!_speechAvailable) {
+      if (!kIsWeb) {
+        final status = await Permission.microphone.request();
+        if (status != PermissionStatus.granted) {
+          debugPrint('Microphone permission denied');
+          return null;
+        }
+      }
+
       _speechAvailable = await _speech.initialize(
-        onStatus: (status) => print('Speech status: $status'),
-        onError: (error) => print('Speech error: $error'),
+        onStatus: (status) => debugPrint('STT Status: $status'),
+        onError: (error) => debugPrint('STT Error: $error'),
+        debugLogging: true,
       );
+
+      if (_speechAvailable) {
+        var locales = await _speech.locales();
+        debugPrint(
+          'Available locales: ${locales.map((e) => e.localeId).join(', ')}',
+        );
+      }
     }
 
     if (!_speechAvailable) {
-      print('Speech recognition not available');
+      debugPrint('Speech recognition FAILED to initialize.');
       return null;
     }
 
@@ -56,15 +87,22 @@ class VoiceService {
     String? result;
     _isListening = true;
 
-    final completer = Future<void>.delayed(timeout ?? const Duration(seconds: 5));
-    
+    final completer = Future<void>.delayed(
+      timeout ?? const Duration(seconds: 5),
+    );
+
     await _speech.listen(
       onResult: (val) {
+        debugPrint('Recognized words: ${val.recognizedWords}');
         result = val.recognizedWords;
+        if (onPartialResult != null) {
+          onPartialResult(val.recognizedWords);
+        }
       },
       listenFor: timeout ?? const Duration(seconds: 5),
-      pauseFor: const Duration(seconds: 2),
-      listenMode: stt.ListenMode.confirmation,
+      pauseFor: const Duration(seconds: 3),
+      localeId: "en_US",
+      listenOptions: stt.SpeechListenOptions(partialResults: true),
     );
 
     // Wait for listening to complete

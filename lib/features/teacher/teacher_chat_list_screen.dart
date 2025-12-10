@@ -8,7 +8,7 @@ import '../../core/theme.dart';
 
 class TeacherChatListScreen extends StatelessWidget {
   final String teacherId;
-  const TeacherChatListScreen({Key? key, required this.teacherId}) : super(key: key);
+  const TeacherChatListScreen({super.key, required this.teacherId});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,11 @@ class TeacherChatListScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey.shade300),
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 80,
+                    color: Colors.grey.shade300,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No students yet',
@@ -51,10 +55,7 @@ class TeacherChatListScreen extends StatelessWidget {
             itemCount: students.length,
             itemBuilder: (context, index) {
               final student = students[index];
-              return _StudentParentCard(
-                student: student,
-                teacherId: teacherId,
-              );
+              return _StudentParentCard(student: student, teacherId: teacherId);
             },
           );
         },
@@ -67,10 +68,7 @@ class _StudentParentCard extends StatelessWidget {
   final StudentModel student;
   final String teacherId;
 
-  const _StudentParentCard({
-    required this.student,
-    required this.teacherId,
-  });
+  const _StudentParentCard({required this.student, required this.teacherId});
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +84,9 @@ class _StudentParentCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: AppTheme.accentOrange.withOpacity(0.1),
+                    backgroundColor: AppTheme.accentOrange.withValues(
+                      alpha: 0.1,
+                    ),
                     child: Text(
                       student.fullName[0].toUpperCase(),
                       style: const TextStyle(
@@ -110,7 +110,10 @@ class _StudentParentCard extends StatelessWidget {
                         ),
                         Text(
                           'Grade ${student.grade} ${student.section}',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -126,12 +129,19 @@ class _StudentParentCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange.shade700,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'No parent assigned yet',
-                        style: TextStyle(color: Colors.orange.shade700, fontSize: 14),
+                        style: TextStyle(
+                          color: Colors.orange.shade700,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -154,7 +164,7 @@ class _StudentParentCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: AppTheme.accentOrange.withOpacity(0.1),
+                  backgroundColor: AppTheme.accentOrange.withValues(alpha: 0.1),
                   child: Text(
                     student.fullName[0].toUpperCase(),
                     style: const TextStyle(
@@ -178,7 +188,10 @@ class _StudentParentCard extends StatelessWidget {
                       ),
                       Text(
                         'Grade ${student.grade} ${student.section}',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -187,12 +200,14 @@ class _StudentParentCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 1),
-          ...student.parentIds.map((parentId) => _ParentChatTile(
-                parentId: parentId,
-                studentId: student.studentId,
-                studentName: student.fullName,
-                teacherId: teacherId,
-              )),
+          ...student.parentIds.map(
+            (parentId) => _ParentChatTile(
+              parentId: parentId,
+              studentId: student.studentId,
+              studentName: student.fullName,
+              teacherId: teacherId,
+            ),
+          ),
         ],
       ),
     );
@@ -229,7 +244,11 @@ class _ParentChatTile extends StatelessWidget {
               gradient: AppTheme.purpleGradient,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.family_restroom, color: Colors.white, size: 20),
+            child: const Icon(
+              Icons.family_restroom,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           title: Text(parentName),
           subtitle: Text('Parent of $studentName'),
@@ -239,14 +258,15 @@ class _ParentChatTile extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ParentTeacherChatScreen(
-                    currentUserId: teacherId,
-                    currentUserRole: 'teacher',
-                    parentId: parentId,
-                    teacherId: teacherId,
-                    studentId: studentId,
-                    studentName: studentName,
-                  ),
+                  builder:
+                      (context) => ParentTeacherChatScreen(
+                        currentUserId: teacherId,
+                        currentUserRole: 'teacher',
+                        parentId: parentId,
+                        teacherId: teacherId,
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
                 ),
               );
             }

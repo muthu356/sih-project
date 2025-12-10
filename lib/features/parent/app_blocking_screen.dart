@@ -11,10 +11,10 @@ class AppBlockingScreen extends StatefulWidget {
   final String parentId;
 
   const AppBlockingScreen({
-    Key? key,
+    super.key,
     required this.studentId,
     required this.parentId,
-  }) : super(key: key);
+  });
 
   @override
   State<AppBlockingScreen> createState() => _AppBlockingScreenState();
@@ -38,28 +38,28 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
       _isLoading = true;
       _permissionStatus = 'checking';
     });
-    
+
     try {
       // Try to get app usage - this requires Usage Access permission on Android
       final endDate = DateTime.now();
       final startDate = endDate.subtract(const Duration(days: 1));
       final apps = await AppUsage().getAppUsage(startDate, endDate);
-      
+
       setState(() {
         _hasPermission = true;
         _installedApps = apps;
         _permissionStatus = 'granted';
       });
-      
+
       await _loadBlockedApps();
     } catch (e) {
-      print('Permission error: $e');
+      debugPrint('Permission error: $e');
       setState(() {
         _hasPermission = false;
         _permissionStatus = 'denied';
       });
     }
-    
+
     setState(() => _isLoading = false);
   }
 
@@ -73,13 +73,15 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please go to Settings > Apps > Special Access > Usage Access and enable for this app'),
+            content: Text(
+              'Please go to Settings > Apps > Special Access > Usage Access and enable for this app',
+            ),
             duration: Duration(seconds: 5),
           ),
         );
       }
     }
-    
+
     // Refresh after returning from settings
     await Future.delayed(const Duration(seconds: 1));
     _checkPermissionAndLoad();
@@ -87,10 +89,17 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
 
   Future<void> _loadBlockedApps() async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final policy = await dbService.getAppPolicy(widget.studentId, widget.parentId);
-    
+    final policy = await dbService.getAppPolicy(
+      widget.studentId,
+      widget.parentId,
+    );
+
     if (policy != null) {
-      setState(() => _blockedApps = policy.blockedApps.map((app) => app.packageName).toSet());
+      setState(
+        () =>
+            _blockedApps =
+                policy.blockedApps.map((app) => app.packageName).toSet(),
+      );
     }
   }
 
@@ -98,29 +107,39 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
     if (_blockedApps.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please select at least one app to block, or go back.'),
+          content: const Text(
+            'Please select at least one app to block, or go back.',
+          ),
           backgroundColor: Colors.orange.shade400,
         ),
       );
       return;
     }
-    
+
     setState(() => _isLoading = true);
 
     try {
       final dbService = Provider.of<DatabaseService>(context, listen: false);
-      
-      final blockedAppsList = _blockedApps.map((packageName) {
-        // Find app name from installed apps
-        final appInfo = _installedApps.firstWhere(
-          (app) => app.packageName == packageName,
-          orElse: () => AppUsageInfo(packageName, 0, DateTime.now(), DateTime.now(), DateTime.now()),
-        );
-        return BlockedApp(
-          packageName: packageName,
-          appName: appInfo.appName,
-        );
-      }).toList();
+
+      final blockedAppsList =
+          _blockedApps.map((packageName) {
+            // Find app name from installed apps
+            final appInfo = _installedApps.firstWhere(
+              (app) => app.packageName == packageName,
+              orElse:
+                  () => AppUsageInfo(
+                    packageName,
+                    0,
+                    DateTime.now(),
+                    DateTime.now(),
+                    DateTime.now(),
+                  ),
+            );
+            return BlockedApp(
+              packageName: packageName,
+              appName: appInfo.appName,
+            );
+          }).toList();
 
       final policy = AppPolicyModel(
         policyId: '${widget.studentId}_${widget.parentId}',
@@ -144,7 +163,10 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -167,7 +189,13 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
           if (_hasPermission && _installedApps.isNotEmpty)
             TextButton(
               onPressed: _isLoading ? null : _savePolicy,
-              child: const Text('SAVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'SAVE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
         ],
       ),
@@ -212,7 +240,11 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
               color: Colors.orange.shade50,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.security, size: 80, color: Colors.orange.shade700),
+            child: Icon(
+              Icons.security,
+              size: 80,
+              color: Colors.orange.shade700,
+            ),
           ),
           const SizedBox(height: 32),
           const Text(
@@ -265,7 +297,10 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
             child: ElevatedButton.icon(
               onPressed: _openAppSettings,
               icon: const Icon(Icons.settings),
-              label: const Text('Open Settings', style: TextStyle(fontSize: 16)),
+              label: const Text(
+                'Open Settings',
+                style: TextStyle(fontSize: 16),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryLight,
               ),
@@ -341,8 +376,7 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
             ],
           ),
         ),
-        if (_isLoading)
-          const LinearProgressIndicator(),
+        if (_isLoading) const LinearProgressIndicator(),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -355,9 +389,10 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: isBlocked 
-                      ? BorderSide(color: Colors.red.shade300, width: 2)
-                      : BorderSide.none,
+                  side:
+                      isBlocked
+                          ? BorderSide(color: Colors.red.shade300, width: 2)
+                          : BorderSide.none,
                 ),
                 child: CheckboxListTile(
                   value: isBlocked,
@@ -384,9 +419,8 @@ class _AppBlockingScreenState extends State<AppBlockingScreen> {
                   secondary: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isBlocked
-                          ? Colors.red.shade50
-                          : Colors.green.shade50,
+                      color:
+                          isBlocked ? Colors.red.shade50 : Colors.green.shade50,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(

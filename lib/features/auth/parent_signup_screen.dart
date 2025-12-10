@@ -9,7 +9,7 @@ import 'parent_login_screen.dart';
 import '../../core/theme.dart';
 
 class ParentSignupScreen extends StatefulWidget {
-  const ParentSignupScreen({Key? key}) : super(key: key);
+  const ParentSignupScreen({super.key});
 
   @override
   State<ParentSignupScreen> createState() => _ParentSignupScreenState();
