@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/study_mode_service.dart';
+import '../../services/monitoring_service.dart';
 import '../../models/student_model.dart';
 // import '../../models/app_policy_model.dart'; // Unused
 import 'student_assignment_screen.dart';
@@ -107,8 +108,15 @@ class _HomeTabState extends State<_HomeTab> {
   Future<void> _toggleStudyMode(bool value, StudentModel student) async {
     setState(() => _isStudyMode = value);
 
+    final monitoringService = MonitoringService();
+
     if (value) {
       await _studyModeService.enableStudyMode();
+
+      // Start Monitoring
+      monitoringService.setStudentId(widget.studentId);
+      await monitoringService.requestPermissions();
+      await monitoringService.startMonitoring();
 
       if (student.parentIds.isNotEmpty) {
         // Get service before async gap
@@ -128,13 +136,17 @@ class _HomeTabState extends State<_HomeTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Study mode enabled - Blocked apps will not open'),
+            content: Text('Study mode enabled - Monitoring active'),
             backgroundColor: Colors.green,
           ),
         );
       }
     } else {
       await _studyModeService.disableStudyMode();
+
+      // Stop Monitoring
+      monitoringService.stopMonitoring();
+
       if (mounted) {
         ScaffoldMessenger.of(
           context,

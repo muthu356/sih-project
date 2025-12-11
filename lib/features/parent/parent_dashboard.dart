@@ -9,7 +9,8 @@ import 'app_blocking_screen.dart';
 import 'parent_assignment_screen.dart';
 import 'parent_chat_list_screen.dart';
 import 'parent_notifications_screen.dart';
-import 'student_progress_screen.dart';
+import 'live_monitor_screen.dart';
+import 'student_history_screen.dart';
 import '../../core/theme.dart';
 
 class ParentDashboard extends StatefulWidget {
@@ -254,28 +255,59 @@ class _StudentsTab extends StatelessWidget {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed:
-                            () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) =>
-                                        StudentProgressScreen(student: student),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed:
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => StudentHistoryScreen(
+                                          studentId: student.studentId,
+                                        ),
+                                  ),
+                                ),
+                            icon: const Icon(Icons.history),
+                            label: const Text('History'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryLight,
+                              side: const BorderSide(
+                                color: AppTheme.primaryLight,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                        icon: const Icon(Icons.bar_chart),
-                        label: const Text('View Progress'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.primaryLight,
-                          side: const BorderSide(color: AppTheme.primaryLight),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => LiveMonitorScreen(
+                                          studentId: student.studentId,
+                                          studentName: student.fullName,
+                                        ),
+                                  ),
+                                ),
+                            icon: const Icon(Icons.remove_red_eye),
+                            label: const Text('Live View'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accentOrange,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

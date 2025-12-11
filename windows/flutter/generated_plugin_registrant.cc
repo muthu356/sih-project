@@ -12,7 +12,6 @@
 #include <flutter_tts/flutter_tts_plugin.h>
 #include <permission_handler_windows/permission_handler_windows_plugin.h>
 #include <speech_to_text_windows/speech_to_text_windows.h>
-#include <webview_windows/webview_windows_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   CloudFirestorePluginCApiRegisterWithRegistrar(
@@ -27,6 +26,4 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("PermissionHandlerWindowsPlugin"));
   SpeechToTextWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("SpeechToTextWindows"));
-  WebviewWindowsPluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("WebviewWindowsPlugin"));
 }

@@ -333,4 +333,55 @@ class DatabaseService {
       '${recipientId}_unread': true,
     });
   }
+
+  // ========== LIVE ACTIVITY MONITORING ==========
+  Future<void> updateStudentActivity(
+    String studentId,
+    Map<String, dynamic> activityData,
+  ) async {
+    await _firestore
+        .collection('students')
+        .doc(studentId)
+        .collection('activity')
+        .doc('current')
+        .set({...activityData, 'lastUpdated': FieldValue.serverTimestamp()});
+  }
+
+  Stream<Map<String, dynamic>?> streamStudentActivity(String studentId) {
+    return _firestore
+        .collection('students')
+        .doc(studentId)
+        .collection('activity')
+        .doc('current')
+        .snapshots()
+        .map((doc) => doc.data());
+  }
+
+  // ========== HISTORICAL USAGE LOGGING ==========
+  Future<void> logUsageEvent(
+    String studentId,
+    Map<String, dynamic> eventData,
+  ) async {
+    await _firestore
+        .collection('students')
+        .doc(studentId)
+        .collection('usage_events')
+        .add({...eventData, 'serverTimestamp': FieldValue.serverTimestamp()});
+  }
+
+  Stream<List<Map<String, dynamic>>> getUsageHistory(
+    String studentId,
+    DateTime start,
+    DateTime end,
+  ) {
+    return _firestore
+        .collection('students')
+        .doc(studentId)
+        .collection('usage_events')
+        .where('startTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('startTime', isLessThanOrEqualTo: Timestamp.fromDate(end))
+        .orderBy('startTime', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
 }
