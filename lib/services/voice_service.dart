@@ -1,184 +1,225 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_tts/flutter_tts.dart';
+import 'dart:async';
+import 'dart:io';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:permission_handler/permission_handler.dart';
 
-/// Voice Service for Windows Desktop & Mobile
-/// TTS works on Windows, STT may need Windows-specific handling
+/// Voice Service for Windows Desktop
+/// Uses Windows PowerShell TTS and speech_to_text for STT
+/// 
+/// Features:
+/// - Continuous ASR with 3-second pause detection
+/// - Windows-native TTS via PowerShell SpeechSynthesizer
+/// - Comprehensive logging for debugging
 class VoiceService {
-  final FlutterTts _tts = FlutterTts();
   final stt.SpeechToText _speech = stt.SpeechToText();
   
   bool _isListening = false;
+  bool _isSpeaking = false;
   bool _speechAvailable = false;
-  bool _isContinuousMode = false;
+  bool _isInitialized = false;
+  
+  // Callback for continuous listening
+  Function(String)? _continuousCallback;
+  Timer? _restartTimer;
 
   VoiceService() {
-    _initTTS();
-    _initSTT();
+    _initialize();
   }
 
-  bool get isWindows {
-    if (kIsWeb) return false;
+  Future<void> _initialize() async {
+    if (_isInitialized) return;
+    
+    print('[VoiceService] 🚀 Initializing for Windows Desktop...');
+    
+    // Initialize STT
     try {
-      return Platform.isWindows;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<void> _initTTS() async {
-    try {
-      await _tts.setLanguage('en-US');
-      await _tts.setSpeechRate(0.4);
-      await _tts.setVolume(1.0);
-      await _tts.setPitch(1.0);
-      print('[VoiceService] TTS initialized (Windows: $isWindows)');
-    } catch (e) {
-      print('[VoiceService] TTS init error: $e');
-    }
-  }
-
-  Future<void> _initSTT() async {
-    try {
-      // On Windows, speech_to_text uses Windows SAPI
-      // On Android/iOS, it uses native speech recognition
-      if (!isWindows) {
-        // Request microphone permission on mobile
-        final status = await Permission.microphone.request();
-        if (!status.isGranted) {
-          print('[VoiceService] ❌ Microphone permission denied');
-          _speechAvailable = false;
-          return;
-        }
-      }
-      
       _speechAvailable = await _speech.initialize(
-        onStatus: (status) => print('[VoiceService] Speech status: $status'),
-        onError: (error) => print('[VoiceService] ❌ Speech error: $error'),
+        onStatus: (status) {
+          print('[VoiceService] 📊 STT status: $status');
+          if (status == 'done' || status == 'notListening') {
+            _isListening = false;
+            // Auto-restart if in continuous mode
+            if (_continuousCallback != null) {
+              _scheduleRestart();
+            }
+          }
+        },
+        onError: (error) {
+          print('[VoiceService] ❌ STT error: ${error.errorMsg}');
+          _isListening = false;
+        },
       );
-      print('[VoiceService] ✅ Speech recognition initialized: $_speechAvailable');
+      print('[VoiceService] ✅ STT initialized: $_speechAvailable');
     } catch (e) {
-      print('[VoiceService] STT init error: $e');
+      print('[VoiceService] ❌ STT init error: $e');
       _speechAvailable = false;
     }
+    
+    _isInitialized = true;
+    print('[VoiceService] ✅ Windows TTS ready (PowerShell)');
   }
 
+  /// Speak text aloud using Windows PowerShell TTS
   Future<void> speak(String text) async {
+    if (text.isEmpty) return;
+    
+    // Stop listening while speaking to avoid echo
+    if (_isListening) {
+      await _speech.stop();
+      _isListening = false;
+    }
+    
     print('[VoiceService] 🔊 Speaking: "$text"');
+    _isSpeaking = true;
+    
     try {
-      await _tts.speak(text);
+      // Use PowerShell to speak on Windows
+      final escapedText = text.replaceAll('"', '`"').replaceAll("'", "`'");
+      final result = await Process.run(
+        'powershell',
+        [
+          '-Command',
+          'Add-Type -AssemblyName System.Speech; '
+          '\$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; '
+          '\$synth.Rate = 1; '
+          '\$synth.Speak("$escapedText");'
+        ],
+      );
+      
+      if (result.exitCode != 0) {
+        print('[VoiceService] ⚠️ TTS warning: ${result.stderr}');
+      }
     } catch (e) {
-      print('[VoiceService] Speak error: $e');
+      print('[VoiceService] ❌ TTS error: $e');
     }
+    
+    _isSpeaking = false;
+    print('[VoiceService] 🔊 TTS completed');
+    
+    // Small pause after speaking
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
+  /// Stop speaking (note: PowerShell TTS runs to completion)
   Future<void> stop() async {
-    await _tts.stop();
-    print('[VoiceService] Stopped TTS');
+    _isSpeaking = false;
   }
 
+  /// Wait for TTS to complete
   Future<void> waitForSpeech() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-  }
-
-  Future<bool> ensurePermission() async {
-    if (_speechAvailable) return true;
-    
-    if (!isWindows) {
-      final status = await Permission.microphone.request();
-      if (!status.isGranted) return false;
+    while (_isSpeaking) {
+      await Future.delayed(const Duration(milliseconds: 100));
     }
-    
-    _speechAvailable = await _speech.initialize(
-      onStatus: (status) => print('[VoiceService] Speech status: $status'),
-      onError: (error) => print('[VoiceService] ❌ Speech error: $error'),
-    );
-    return _speechAvailable;
   }
 
-  /// Continuous listening with auto-capture after 3-sec pause
+  /// Start continuous listening mode
   Future<void> startContinuousListening({
     required Function(String) onResult,
     Function()? onListeningStarted,
     Function()? onListeningStopped,
   }) async {
-    if (!await ensurePermission()) {
-      print('[VoiceService] ❌ Cannot start listening: no permission');
-      return;
-    }
-
-    if (_isListening) {
-      print('[VoiceService] Already listening');
-      return;
-    }
-
-    _isContinuousMode = true;
-    _isListening = true;
-    print('[VoiceService] 🎤 Starting CONTINUOUS listening');
+    print('[VoiceService] 🎤 Starting CONTINUOUS listening mode...');
     
+    if (!_speechAvailable) {
+      await _initialize();
+      if (!_speechAvailable) {
+        print('[VoiceService] ❌ Speech recognition not available');
+        return;
+      }
+    }
+    
+    _continuousCallback = onResult;
     onListeningStarted?.call();
+    
+    await _startListeningSession();
+  }
 
+  Future<void> _startListeningSession() async {
+    if (_isListening || _isSpeaking) return;
+    
+    _isListening = true;
+    print('[VoiceService] 🎤 Listening session started...');
+    
     String lastRecognized = '';
-
+    
     await _speech.listen(
       onResult: (result) {
-        final recognized = result.recognizedWords;
+        final text = result.recognizedWords.trim();
         
-        if (recognized != lastRecognized && recognized.isNotEmpty) {
-          print('[VoiceService] 📝 Captured: "$recognized" (final: ${result.finalResult})');
-          lastRecognized = recognized;
+        if (text.isNotEmpty && text != lastRecognized) {
+          print('[VoiceService] 📝 Partial: "$text" (final: ${result.finalResult})');
+          lastRecognized = text;
           
           if (result.finalResult) {
-            print('[VoiceService] ✅ Final result: "$recognized"');
-            onResult(recognized);
-            lastRecognized = '';
+            print('[VoiceService] ✅ CAPTURED: "$text"');
+            _isListening = false;
+            
+            // Call the callback with captured text
+            if (_continuousCallback != null) {
+              _continuousCallback!(text);
+            }
           }
         }
       },
-      listenFor: const Duration(minutes: 10),
-      pauseFor: const Duration(seconds: 3),
-      listenMode: stt.ListenMode.confirmation,
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3), // 3-second pause = end of command
+      listenMode: stt.ListenMode.dictation,
       cancelOnError: false,
       partialResults: true,
     );
-
-    print('[VoiceService] Continuous listening active');
   }
 
+  void _scheduleRestart() {
+    _restartTimer?.cancel();
+    _restartTimer = Timer(const Duration(milliseconds: 500), () {
+      if (_continuousCallback != null && !_isSpeaking && !_isListening) {
+        print('[VoiceService] 🔄 Restarting listening session...');
+        _startListeningSession();
+      }
+    });
+  }
+
+  /// Stop continuous listening mode
   Future<void> stopContinuousListening() async {
-    if (!_isListening) return;
-    
-    _isContinuousMode = false;
-    _isListening = false;
+    print('[VoiceService] 🛑 Stopping continuous listening');
+    _continuousCallback = null;
+    _restartTimer?.cancel();
     await _speech.stop();
-    print('[VoiceService] 🛑 Stopped continuous listening');
+    _isListening = false;
   }
 
-  /// Single-shot listen
-  Future<String?> listen({Duration? timeout, bool forBlindMode = false}) async {
-    if (!await ensurePermission()) {
-      print('[VoiceService] ❌ Cannot listen: no permission');
-      return null;
+  /// Single-shot listen (for specific prompts)
+  Future<String?> listen({Duration? timeout}) async {
+    if (!_speechAvailable) {
+      await _initialize();
+      if (!_speechAvailable) {
+        print('[VoiceService] ❌ Speech not available');
+        return null;
+      }
     }
-
-    if (_isListening) return null;
-
-    String? result;
-    _isListening = true;
-
-    final actualTimeout = timeout ?? (forBlindMode ? const Duration(seconds: 15) : const Duration(seconds: 8));
     
+    if (_isListening) {
+      await _speech.stop();
+      _isListening = false;
+    }
+    
+    final actualTimeout = timeout ?? const Duration(seconds: 10);
     print('[VoiceService] 🎤 Single-shot listen (${actualTimeout.inSeconds}s)');
+    
+    String? result;
+    final completer = Completer<String?>();
+    
+    _isListening = true;
     
     await _speech.listen(
       onResult: (val) {
-        result = val.recognizedWords;
-        if (val.finalResult) {
-          print('[VoiceService] ✅ Final: "$result"');
-        } else {
-          print('[VoiceService] 📝 Partial: "$result"');
+        final text = val.recognizedWords.trim();
+        if (text.isNotEmpty) {
+          print('[VoiceService] 📝 Captured: "$text" (final: ${val.finalResult})');
+          result = text;
+          if (val.finalResult && !completer.isCompleted) {
+            print('[VoiceService] ✅ Final result: "$text"');
+            completer.complete(text);
+          }
         }
       },
       listenFor: actualTimeout,
@@ -187,23 +228,40 @@ class VoiceService {
       cancelOnError: false,
       partialResults: true,
     );
-
-    await Future.delayed(actualTimeout);
+    
+    // Wait for result or timeout
+    try {
+      result = await completer.future.timeout(actualTimeout, onTimeout: () {
+        print('[VoiceService] ⏰ Listen timeout');
+        return result;
+      });
+    } catch (e) {
+      print('[VoiceService] Listen error: $e');
+    }
+    
     await _speech.stop();
     _isListening = false;
-
+    
     return result;
   }
 
+  /// Stop all listening
   Future<void> stopListening() async {
-    if (_isListening) {
-      await _speech.stop();
-      _isListening = false;
-      _isContinuousMode = false;
-    }
+    await _speech.stop();
+    _isListening = false;
+    _continuousCallback = null;
+    _restartTimer?.cancel();
   }
 
+  // Getters
   bool get isListening => _isListening;
+  bool get isSpeaking => _isSpeaking;
   bool get isSpeechAvailable => _speechAvailable;
-  bool get isContinuousMode => _isContinuousMode;
+  bool get isInitialized => _isInitialized;
+
+  /// Dispose resources
+  void dispose() {
+    stopListening();
+    _restartTimer?.cancel();
+  }
 }

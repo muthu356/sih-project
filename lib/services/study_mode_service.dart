@@ -43,7 +43,6 @@ class StudyModeService {
         print('[StudyMode] ❌ Failed to connect to Windows Agent');
       }
     } else {
-      // For other platforms, just store locally
       print('[StudyMode] Non-Windows platform - storing locally only');
     }
   }
@@ -57,6 +56,25 @@ class StudyModeService {
     if (isWindows && _windowsService.isConnected) {
       await _windowsService.stopStudyMode();
       print('[StudyMode] ✅ Windows study mode stopped');
+    }
+  }
+
+  /// Alias for stopStudyMode (backward compatibility)
+  Future<void> disableStudyMode() => stopStudyMode();
+
+  /// Enable study mode (alias for startStudyMode with empty block list)
+  Future<void> enableStudyMode() async {
+    await startStudyMode([]);
+  }
+
+  /// Update blocked apps during study mode
+  Future<void> updateBlockedApps(String blockedPackages) async {
+    final apps = blockedPackages.split(',').where((s) => s.isNotEmpty).toList();
+    _blockedApps = apps;
+    print('[StudyMode] Updated blocked apps: $apps');
+    
+    if (isWindows && _windowsService.isConnected) {
+      await _windowsService.startStudyMode(apps);
     }
   }
 

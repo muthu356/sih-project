@@ -8,7 +8,8 @@ import '../../core/theme.dart';
 /// Connects to Windows Agent to get running apps and block them
 class AppBlockingScreen extends StatefulWidget {
   final String studentId;
-  const AppBlockingScreen({Key? key, required this.studentId}) : super(key: key);
+  final String? parentId; // Optional for backward compatibility
+  const AppBlockingScreen({Key? key, required this.studentId, this.parentId}) : super(key: key);
 
   @override
   State<AppBlockingScreen> createState() => _AppBlockingScreenState();

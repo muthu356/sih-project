@@ -89,7 +89,7 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   Future<void> _loadStudyMode() async {
-    final enabled = await _studyModeService.isStudyModeEnabled();
+    final enabled = _studyModeService.isStudyModeEnabled;
     setState(() => _isStudyMode = enabled);
   }
 

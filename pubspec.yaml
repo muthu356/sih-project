@@ -46,24 +46,16 @@ dependencies:
   # AI & LLM
   google_generative_ai: ^0.4.6
   
-  # Accessibility & Voice
+  # Accessibility & Voice (Windows compatible)
   speech_to_text: ^7.0.0
-  permission_handler: ^11.3.1
   
   # Utils
   intl: ^0.19.0
-  flutter_tts: ^4.2.3  # Fixed Windows CMake issue
   
   # Utilities
   shared_preferences: ^2.5.1
   uuid: ^4.5.1
   google_fonts: ^6.2.1
-  
-  # App usage tracking (Existing)
-  app_usage: ^4.0.1
-  
-  # For opening settings (Existing)
-  app_settings: ^5.1.1
 
 dev_dependencies:
   flutter_test:
