@@ -8,7 +8,7 @@ import '../../core/theme.dart';
 class StudentProgressScreen extends StatelessWidget {
   final StudentModel student;
 
-  const StudentProgressScreen({Key? key, required this.student}) : super(key: key);
+  const StudentProgressScreen({super.key, required this.student});
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +51,7 @@ class StudentProgressScreen extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: AppTheme.primaryLight.withOpacity(0.1),
+              backgroundColor: AppTheme.primaryLight.withValues(alpha: 0.1),
               child: Text(
                 student.fullName[0].toUpperCase(),
                 style: const TextStyle(
@@ -68,7 +68,10 @@ class StudentProgressScreen extends StatelessWidget {
                 children: [
                   Text(
                     student.fullName,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -107,7 +110,10 @@ class StudentProgressScreen extends StatelessWidget {
               children: [
                 Text(
                   '$hours Hours',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   'Total Study Time',
@@ -128,10 +134,11 @@ class StudentProgressScreen extends StatelessWidget {
         String averageGrade = 'N/A';
         if (snapshot.hasData && snapshot.data!.isNotEmpty) {
           final submissions = snapshot.data!;
-          final gradedSubmissions = submissions.where((s) => s.grade != null).toList();
-          
+          final gradedSubmissions =
+              submissions.where((s) => s.grade != null).toList();
+
           if (gradedSubmissions.isNotEmpty) {
-            // Assuming grades are numeric strings like "90", "85". 
+            // Assuming grades are numeric strings like "90", "85".
             // If they are letters, this logic would need to be different.
             // For now, we'll try to parse them, or just show the latest one.
             double total = 0;
@@ -151,7 +158,9 @@ class StudentProgressScreen extends StatelessWidget {
 
         return Card(
           elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
@@ -170,7 +179,10 @@ class StudentProgressScreen extends StatelessWidget {
                   children: [
                     Text(
                       averageGrade,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       'Average Grade',
@@ -200,7 +212,10 @@ class StudentProgressScreen extends StatelessWidget {
 
         final assignments = snapshot.data!;
         final total = assignments.length;
-        final completed = assignments.where((a) => a.status == AssignmentStatus.completed).length;
+        final completed =
+            assignments
+                .where((a) => a.status == AssignmentStatus.completed)
+                .length;
         final progress = total == 0 ? 0.0 : completed / total;
 
         return Column(
@@ -269,7 +284,9 @@ class StudentProgressScreen extends StatelessWidget {
     return StreamBuilder<List<AssignmentModel>>(
       stream: dbService.getStudentAssignments(student.studentId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
         final recentAssignments = snapshot.data!.take(5).toList();
 
@@ -287,14 +304,20 @@ class StudentProgressScreen extends StatelessWidget {
               itemCount: recentAssignments.length,
               itemBuilder: (context, index) {
                 final assignment = recentAssignments[index];
-                final isCompleted = assignment.status == AssignmentStatus.completed;
-                
+                final isCompleted =
+                    assignment.status == AssignmentStatus.completed;
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: isCompleted ? Colors.green.shade50 : Colors.orange.shade50,
+                      backgroundColor:
+                          isCompleted
+                              ? Colors.green.shade50
+                              : Colors.orange.shade50,
                       child: Icon(
                         isCompleted ? Icons.check : Icons.pending_actions,
                         color: isCompleted ? Colors.green : Colors.orange,
@@ -306,12 +329,30 @@ class StudentProgressScreen extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
-                      'Due: ${_formatDate(assignment.dueDate)}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      assignment.dueDate != null
+                          ? 'Due: ${_formatDate(assignment.dueDate!)}'
+                          : 'No due date',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                    trailing: isCompleted
-                        ? const Text('Done', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
-                        : const Text('Pending', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                    trailing:
+                        isCompleted
+                            ? const Text(
+                              'Done',
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                            : const Text(
+                              'Pending',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                   ),
                 );
               },
@@ -331,10 +372,7 @@ class StudentProgressScreen extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Center(
-        child: Text(
-          message,
-          style: TextStyle(color: Colors.grey.shade500),
-        ),
+        child: Text(message, style: TextStyle(color: Colors.grey.shade500)),
       ),
     );
   }

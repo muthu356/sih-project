@@ -40,7 +40,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     } else {
       // Request permissions and start monitoring
       final hasPermission = await _requestPermissions();
-      
+
       if (hasPermission) {
         await _monitoringService.startMonitoring();
         setState(() {
@@ -72,26 +72,27 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   void _showPermissionDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Permission Required'),
-        content: const Text(
-          'To monitor app usage, please enable "Usage Access" permission in Settings.\n\n'
-          'This allows the app to track which apps you use during study time.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Permission Required'),
+            content: const Text(
+              'To monitor app usage, please enable "Usage Access" permission in Settings.\n\n'
+              'This allows the app to track which apps you use during study time.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  AppSettings.openAppSettings();
+                },
+                child: const Text('Open Settings'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              AppSettings.openAppSettings();
-            },
-            child: const Text('Open Settings'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -108,9 +109,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const MonitoringPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const MonitoringPage()),
               );
             },
             tooltip: 'View Monitoring',
@@ -122,10 +121,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.blue.shade50,
-              Colors.white,
-            ],
+            colors: [Colors.blue.shade50, Colors.white],
           ),
         ),
         child: SafeArea(
@@ -144,11 +140,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       children: [
-                        const Icon(
-                          Icons.school,
-                          size: 60,
-                          color: Colors.blue,
-                        ),
+                        const Icon(Icons.school, size: 60, color: Colors.blue),
                         const SizedBox(height: 16),
                         const Text(
                           'Welcome, Student!',
@@ -172,7 +164,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // Study Mode button
                 Container(
                   height: 200,
@@ -180,7 +172,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -189,9 +181,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   child: ElevatedButton(
                     onPressed: _toggleStudyMode,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isStudyModeActive
-                          ? Colors.red.shade600
-                          : Colors.green.shade600,
+                      backgroundColor:
+                          _isStudyModeActive
+                              ? Colors.red.shade600
+                              : Colors.green.shade600,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -232,7 +225,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // Status indicator
                 if (_isStudyModeActive)
                   Container(
@@ -265,9 +258,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       ],
                     ),
                   ),
-                
+
                 const Spacer(),
-                
+
                 // Info card
                 Card(
                   color: Colors.blue.shade50,
@@ -275,10 +268,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: Colors.blue,
-                        ),
+                        const Icon(Icons.info_outline, color: Colors.blue),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -307,4 +297,3 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     super.dispose();
   }
 }
-

@@ -26,7 +26,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
             _usageHistory.removeLast();
           }
         });
-        
+
         // Auto-scroll to top when new data arrives
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -98,11 +98,15 @@ class _MonitoringPageState extends State<MonitoringPage> {
             builder: (context, snapshot) {
               return Container(
                 margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: _monitoringService.isMonitoring
-                      ? Colors.green
-                      : Colors.grey,
+                  color:
+                      _monitoringService.isMonitoring
+                          ? Colors.green
+                          : Colors.grey,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -132,9 +136,10 @@ class _MonitoringPageState extends State<MonitoringPage> {
           ),
         ],
       ),
-      body: _monitoringService.isMonitoring
-          ? _buildMonitoringView()
-          : _buildEmptyState(),
+      body:
+          _monitoringService.isMonitoring
+              ? _buildMonitoringView()
+              : _buildEmptyState(),
     );
   }
 
@@ -161,10 +166,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
           Text(
             'Start Study Mode from the home screen\nto begin monitoring',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -181,10 +183,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
             const SizedBox(height: 24),
             Text(
               'Waiting for app usage data...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -210,13 +209,11 @@ class _MonitoringPageState extends State<MonitoringPage> {
   Widget _buildUsageCard(AppUsageData data) {
     final appColor = _getAppColor(data.packageName);
     final timeFormat = DateFormat('HH:mm:ss');
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -227,7 +224,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: appColor.withOpacity(0.1),
+                color: appColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -237,7 +234,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
               ),
             ),
             const SizedBox(width: 16),
-            
+
             // App info
             Expanded(
               child: Column(
@@ -260,7 +257,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: appColor.withOpacity(0.1),
+                          color: appColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -337,5 +334,3 @@ class _MonitoringPageState extends State<MonitoringPage> {
     super.dispose();
   }
 }
-
-

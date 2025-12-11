@@ -15,17 +15,18 @@ class ParentTeacherChatScreen extends StatefulWidget {
   final String studentName;
 
   const ParentTeacherChatScreen({
-    Key? key,
+    super.key,
     required this.currentUserId,
     required this.currentUserRole,
     required this.parentId,
     required this.teacherId,
     required this.studentId,
     required this.studentName,
-  }) : super(key: key);
+  });
 
   @override
-  State<ParentTeacherChatScreen> createState() => _ParentTeacherChatScreenState();
+  State<ParentTeacherChatScreen> createState() =>
+      _ParentTeacherChatScreenState();
 }
 
 class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
@@ -49,7 +50,7 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
 
   Future<void> _initializeChat() async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
-    
+
     final existingThread = await dbService.getChatThread(
       widget.parentId,
       widget.teacherId,
@@ -61,7 +62,7 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
         _threadId = existingThread.threadId;
         _isLoading = false;
       });
-      
+
       // Mark as read when entering chat
       await dbService.markThreadAsRead(_threadId!, widget.currentUserId);
     } else {
@@ -74,7 +75,7 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
         lastMessageText: '',
         lastMessageSenderId: '',
       );
-      
+
       final id = await dbService.createChatThread(thread);
       setState(() {
         _threadId = id;
@@ -87,8 +88,11 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
     if (_messageController.text.trim().isEmpty || _threadId == null) return;
 
     final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final notificationService = Provider.of<NotificationService>(context, listen: false);
-    
+    final notificationService = Provider.of<NotificationService>(
+      context,
+      listen: false,
+    );
+
     final messageText = _messageController.text.trim();
     final message = ChatMessage(
       messageId: '',
@@ -99,15 +103,17 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
     );
 
     // Determine recipient
-    final recipientId = widget.currentUserRole == 'parent' ? widget.teacherId : widget.parentId;
-    
+    final recipientId =
+        widget.currentUserRole == 'parent' ? widget.teacherId : widget.parentId;
+
     // Send message and mark unread for recipient
     await dbService.sendMessageWithUnread(_threadId!, message, recipientId);
     _messageController.clear();
-    
+
     // Send push notification to receiver
-    final senderName = widget.currentUserRole == 'parent' ? 'Parent' : 'Teacher';
-    
+    final senderName =
+        widget.currentUserRole == 'parent' ? 'Parent' : 'Teacher';
+
     await notificationService.sendNotificationToUser(
       userId: recipientId,
       title: 'New message from $senderName',
@@ -115,7 +121,7 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
       type: 'chat',
       relatedId: _threadId!,
     );
-    
+
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -131,9 +137,7 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text('Chat: ${widget.studentName}'),
-        ),
+        appBar: AppBar(title: Text('Chat: ${widget.studentName}')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -148,8 +152,13 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
           children: [
             Text('Chat about ${widget.studentName}'),
             Text(
-              widget.currentUserRole == 'parent' ? 'Chatting with Teacher' : 'Chatting with Parent',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              widget.currentUserRole == 'parent'
+                  ? 'Chatting with Teacher'
+                  : 'Chatting with Parent',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+              ),
             ),
           ],
         ),
@@ -170,7 +179,11 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey.shade300),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 80,
+                          color: Colors.grey.shade300,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'No messages yet',
@@ -179,7 +192,10 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Start the conversation!',
-                          style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -191,7 +207,9 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
                 // Auto-scroll to bottom when new messages arrive
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
-                    _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                    _scrollController.jumpTo(
+                      _scrollController.position.maxScrollExtent,
+                    );
                   }
                 });
 
@@ -207,7 +225,12 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
                       message: message.text,
                       isMe: isMe,
                       timestamp: message.createdAt,
-                      senderLabel: isMe ? 'You' : (widget.currentUserRole == 'parent' ? 'Teacher' : 'Parent'),
+                      senderLabel:
+                          isMe
+                              ? 'You'
+                              : (widget.currentUserRole == 'parent'
+                                  ? 'Teacher'
+                                  : 'Parent'),
                     );
                   },
                 );
@@ -221,7 +244,7 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
               color: Theme.of(context).scaffoldBackgroundColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -242,7 +265,10 @@ class _ParentTeacherChatScreenState extends State<ParentTeacherChatScreen> {
                         decoration: const InputDecoration(
                           hintText: 'Type a message...',
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
                         ),
                         maxLines: null,
                         textCapitalization: TextCapitalization.sentences,
@@ -288,7 +314,8 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
@@ -301,10 +328,14 @@ class _MessageBubble extends StatelessWidget {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     gradient: isMe ? AppTheme.primaryGradient : null,
                     color: isMe ? null : Colors.grey.shade200,
@@ -326,10 +357,7 @@ class _MessageBubble extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   DateFormat('HH:mm').format(timestamp),
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
                 ),
               ],
             ),

@@ -3,15 +3,16 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/study_mode_service.dart';
+import '../../services/monitoring_service.dart';
 import '../../models/student_model.dart';
-import '../../models/app_policy_model.dart';
+// import '../../models/app_policy_model.dart'; // Unused
 import 'student_assignment_screen.dart';
 import 'student_ai_assist_screen.dart';
 import '../../core/theme.dart';
 
 class StudentDashboard extends StatefulWidget {
   final String studentId;
-  const StudentDashboard({Key? key, required this.studentId}) : super(key: key);
+  const StudentDashboard({super.key, required this.studentId});
 
   @override
   State<StudentDashboard> createState() => _StudentDashboardState();
@@ -28,15 +29,22 @@ class _StudentDashboardState extends State<StudentDashboard> {
         flexibleSpace: Container(
           decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
         ),
-        title: const Text('Student Dashboard', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Student Dashboard',
+          style: TextStyle(color: Colors.white),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              final authService = Provider.of<AuthService>(context, listen: false);
+              final authService = Provider.of<AuthService>(
+                context,
+                listen: false,
+              );
+              final navigator = Navigator.of(context);
               await authService.signOut();
-              if (mounted) Navigator.pushReplacementNamed(context, '/');
+              if (mounted) navigator.pushReplacementNamed('/');
             },
           ),
         ],
@@ -54,11 +62,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+        onDestinationSelected:
+            (index) => setState(() => _selectedIndex = index),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.assignment), label: 'Assignments'),
-          NavigationDestination(icon: Icon(Icons.psychology), label: 'AI Assist'),
+          NavigationDestination(
+            icon: Icon(Icons.assignment),
+            label: 'Assignments',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.psychology),
+            label: 'AI Assist',
+          ),
         ],
       ),
     );
@@ -68,11 +83,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
 class _HomeTab extends StatefulWidget {
   final String studentId;
   final Function(int) onTabChanged;
-  
-  const _HomeTab({
-    required this.studentId,
-    required this.onTabChanged,
-  });
+
+  const _HomeTab({required this.studentId, required this.onTabChanged});
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -96,13 +108,25 @@ class _HomeTabState extends State<_HomeTab> {
   Future<void> _toggleStudyMode(bool value, StudentModel student) async {
     setState(() => _isStudyMode = value);
 
+    final monitoringService = MonitoringService();
+
     if (value) {
       await _studyModeService.enableStudyMode();
-      
+
+      // Start Monitoring
+      monitoringService.setStudentId(widget.studentId);
+      await monitoringService.requestPermissions();
+      await monitoringService.startMonitoring();
+
       if (student.parentIds.isNotEmpty) {
+        // Get service before async gap
+        if (!mounted) return;
         final dbService = Provider.of<DatabaseService>(context, listen: false);
-        final policy = await dbService.getAppPolicy(widget.studentId, student.parentIds.first);
-        
+        final policy = await dbService.getAppPolicy(
+          widget.studentId,
+          student.parentIds.first,
+        );
+
         if (policy != null) {
           final blockedPackages = policy.blockedApps.join(',');
           await _studyModeService.updateBlockedApps(blockedPackages);
@@ -112,17 +136,21 @@ class _HomeTabState extends State<_HomeTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Study mode enabled - Blocked apps will not open'),
+            content: Text('Study mode enabled - Monitoring active'),
             backgroundColor: Colors.green,
           ),
         );
       }
     } else {
       await _studyModeService.disableStudyMode();
+
+      // Stop Monitoring
+      monitoringService.stopMonitoring();
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Study mode disabled')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Study mode disabled')));
       }
     }
   }
@@ -213,10 +241,13 @@ class _HomeTabState extends State<_HomeTab> {
                     // Study Mode Card
                     Card(
                       elevation: 3,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: _isStudyMode ? AppTheme.accentGradient : null,
+                          gradient:
+                              _isStudyMode ? AppTheme.accentGradient : null,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         padding: const EdgeInsets.all(20),
@@ -227,25 +258,37 @@ class _HomeTabState extends State<_HomeTab> {
                                 Icon(
                                   Icons.school,
                                   size: 40,
-                                  color: _isStudyMode ? Colors.white : AppTheme.primaryLight,
+                                  color:
+                                      _isStudyMode
+                                          ? Colors.white
+                                          : AppTheme.primaryLight,
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Study Mode',
                                         style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
-                                          color: _isStudyMode ? Colors.white : Colors.black,
+                                          color:
+                                              _isStudyMode
+                                                  ? Colors.white
+                                                  : Colors.black,
                                         ),
                                       ),
                                       Text(
-                                        _isStudyMode ? 'Apps are blocked' : 'Enable to focus',
+                                        _isStudyMode
+                                            ? 'Apps are blocked'
+                                            : 'Enable to focus',
                                         style: TextStyle(
-                                          color: _isStudyMode ? Colors.white70 : Colors.grey.shade600,
+                                          color:
+                                              _isStudyMode
+                                                  ? Colors.white70
+                                                  : Colors.grey.shade600,
                                         ),
                                       ),
                                     ],
@@ -253,8 +296,10 @@ class _HomeTabState extends State<_HomeTab> {
                                 ),
                                 Switch(
                                   value: _isStudyMode,
-                                  onChanged: (value) => _toggleStudyMode(value, student),
-                                  activeColor: Colors.white,
+                                  onChanged:
+                                      (value) =>
+                                          _toggleStudyMode(value, student),
+                                  activeThumbColor: Colors.white,
                                   activeTrackColor: Colors.white38,
                                 ),
                               ],
@@ -267,7 +312,10 @@ class _HomeTabState extends State<_HomeTab> {
                     const SizedBox(height: 24),
                     const Text(
                       'Quick Actions',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -332,7 +380,7 @@ class _QuickActionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color, size: 32),

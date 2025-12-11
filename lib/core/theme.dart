@@ -9,7 +9,7 @@ class AppTheme {
   static const Color secondaryDark = Color(0xFF7C3AED);
   static const Color accentPink = Color(0xFFEC4899);
   static const Color accentOrange = Color(0xFFF59E0B);
-  
+
   static const Color surfaceLight = Color(0xFFF9FAFB);
   static const Color surfaceDark = Color(0xFF1F2937);
   static const Color backgroundLight = Color(0xFFFFFFFF);
@@ -20,11 +20,11 @@ class AppTheme {
     brightness: Brightness.light,
     colorScheme: ColorScheme.light(
       primary: primaryLight,
-      primaryContainer: primaryLight.withOpacity(0.1),
+      primaryContainer: primaryLight.withValues(alpha: 0.1),
       secondary: secondaryLight,
-      secondaryContainer: secondaryLight.withOpacity(0.1),
+      secondaryContainer: secondaryLight.withValues(alpha: 0.1),
       surface: surfaceLight,
-      background: backgroundLight,
+      // background: backgroundLight, // Deprecated - use surface
       error: Colors.red.shade400,
     ),
     scaffoldBackgroundColor: backgroundLight,
@@ -43,7 +43,7 @@ class AppTheme {
     ),
     cardTheme: CardThemeData(
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       color: surfaceLight,
     ),
@@ -54,7 +54,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         backgroundColor: primaryLight,
         foregroundColor: Colors.white,
-        textStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: GoogleFonts.outfit(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -77,10 +80,10 @@ class AppTheme {
     navigationBarTheme: NavigationBarThemeData(
       elevation: 8,
       height: 70,
-      labelTextStyle: MaterialStateProperty.all(
+      labelTextStyle: WidgetStateProperty.all(
         GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500),
       ),
-      indicatorColor: primaryLight.withOpacity(0.15),
+      indicatorColor: primaryLight.withValues(alpha: 0.15),
     ),
   );
 
@@ -93,7 +96,7 @@ class AppTheme {
       secondary: secondaryLight,
       secondaryContainer: secondaryDark,
       surface: surfaceDark,
-      background: backgroundDark,
+      // background: backgroundDark, // Deprecated - use surface
       error: Colors.red.shade400,
     ),
     scaffoldBackgroundColor: backgroundDark,
@@ -112,7 +115,7 @@ class AppTheme {
     ),
     cardTheme: CardThemeData(
       elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       color: surfaceDark,
     ),
@@ -123,7 +126,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         backgroundColor: primaryLight,
         foregroundColor: Colors.white,
-        textStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: GoogleFonts.outfit(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -131,11 +137,11 @@ class AppTheme {
       fillColor: surfaceDark,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -147,29 +153,29 @@ class AppTheme {
       elevation: 8,
       height: 70,
       backgroundColor: surfaceDark,
-      labelTextStyle: MaterialStateProperty.all(
+      labelTextStyle: WidgetStateProperty.all(
         GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500),
       ),
-      indicatorColor: primaryLight.withOpacity(0.2),
+      indicatorColor: primaryLight.withValues(alpha: 0.2),
     ),
   );
 
   // Gradient helpers
   static LinearGradient get primaryGradient => const LinearGradient(
-        colors: [primaryLight, secondaryLight],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
+    colors: [primaryLight, secondaryLight],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
   static LinearGradient get accentGradient => const LinearGradient(
-        colors: [accentOrange, accentPink],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
+    colors: [accentOrange, accentPink],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
   static LinearGradient get purpleGradient => const LinearGradient(
-        colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
+    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 }

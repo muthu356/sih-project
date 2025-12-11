@@ -8,13 +8,14 @@ import '../student/student_blind_mode.dart';
 import '../../core/theme.dart';
 
 class StudentLoginScreen extends StatefulWidget {
-  const StudentLoginScreen({Key? key}) : super(key: key);
+  const StudentLoginScreen({super.key});
 
   @override
   State<StudentLoginScreen> createState() => _StudentLoginScreenState();
 }
 
-class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTickerProviderStateMixin {
+class _StudentLoginScreenState extends State<StudentLoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _studentIdController = TextEditingController();
   final VoiceService _voiceService = VoiceService();
@@ -31,16 +32,21 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeIn,
+    );
     _animController.forward();
-    
+
     // Announce for blind students
     _announceScreen();
   }
 
   Future<void> _announceScreen() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    await _voiceService.speak('Student login. Please say your student ID or type it.');
+    await _voiceService.speak(
+      'Student login. Please say your student ID or type it.',
+    );
   }
 
   @override
@@ -54,12 +60,12 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
 
   Future<void> _listenForStudentId() async {
     setState(() => _isListeningForId = true);
-    
+
     await _voiceService.speak('Please say your student ID');
     final id = await _voiceService.listen(timeout: const Duration(seconds: 6));
-    
+
     setState(() => _isListeningForId = false);
-    
+
     if (id != null && id.isNotEmpty) {
       // Remove spaces and convert to uppercase (e.g., "S T 1 0 1" -> "ST101")
       final cleanId = id.replaceAll(' ', '').toUpperCase();
@@ -76,28 +82,31 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
   /// No touches needed - completely hands-free
   Future<void> _askIfBlindAndNavigate(String studentId) async {
     if (!mounted) return;
-    
+
     setState(() => _isAskingBlindMode = true);
-    
+
     // Ask the question
     await _voiceService.speak('Are you blind? Say yes or no.');
-    
+
     // Listen for response - 8 seconds to give time to respond
-    final response = await _voiceService.listen(timeout: const Duration(seconds: 8));
-    
+    final response = await _voiceService.listen(
+      timeout: const Duration(seconds: 8),
+    );
+
     if (!mounted) return;
     setState(() => _isAskingBlindMode = false);
-    
+
     // Check if user said yes
     final lowerResponse = response?.toLowerCase() ?? '';
-    final isBlind = lowerResponse.contains('yes') || 
-                    lowerResponse.contains('yeah') || 
-                    lowerResponse.contains('yep') ||
-                    lowerResponse.contains('blind');
-    
+    final isBlind =
+        lowerResponse.contains('yes') ||
+        lowerResponse.contains('yeah') ||
+        lowerResponse.contains('yep') ||
+        lowerResponse.contains('blind');
+
     if (isBlind) {
       await _voiceService.speak('Entering voice mode.');
-      
+
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -129,20 +138,20 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       final dbService = Provider.of<DatabaseService>(context, listen: false);
-      
+
       final studentId = _studentIdController.text.trim();
-      
+
       // Sign in
       final user = await authService.signInAsStudent(studentId);
 
       if (user != null && mounted) {
         // Fetch student data to verify exists
         final student = await dbService.getStudent(studentId);
-        
+
         if (student == null) {
           throw Exception('Student not found');
         }
-        
+
         // CRITICAL: Ask if blind via voice instead of checking stored field
         await _voiceService.speak('Login successful.');
         await _askIfBlindAndNavigate(studentId);
@@ -150,13 +159,18 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
     } catch (e) {
       if (mounted) {
         final errorMsg = 'Login failed: ${e.toString()}';
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red.shade400),
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red.shade400,
+          ),
         );
-        
+
         // Announce error for blind students
-        _voiceService.speak('Login failed. Please check your student ID and try again.');
+        _voiceService.speak(
+          'Login failed. Please check your student ID and try again.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -185,7 +199,7 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
                     ],
                   ),
                 ),
-                
+
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.only(top: 20),
@@ -203,25 +217,27 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Icon(Icons.person, size: 70, color: AppTheme.primaryLight),
+                            const Icon(
+                              Icons.person,
+                              size: 70,
+                              color: AppTheme.primaryLight,
+                            ),
                             const SizedBox(height: 24),
                             Text(
                               'Student Login',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Enter your Student ID',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey,
-                                  ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.grey),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 40),
-                            
+
                             // Student ID field with voice button
                             TextFormField(
                               controller: _studentIdController,
@@ -230,10 +246,18 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
                                 prefixIcon: const Icon(Icons.badge_outlined),
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    _isListeningForId ? Icons.mic : Icons.mic_none,
-                                    color: _isListeningForId ? Colors.red : AppTheme.primaryLight,
+                                    _isListeningForId
+                                        ? Icons.mic
+                                        : Icons.mic_none,
+                                    color:
+                                        _isListeningForId
+                                            ? Colors.red
+                                            : AppTheme.primaryLight,
                                   ),
-                                  onPressed: _isListeningForId ? null : _listenForStudentId,
+                                  onPressed:
+                                      _isListeningForId
+                                          ? null
+                                          : _listenForStudentId,
                                   tooltip: 'Speak your Student ID',
                                 ),
                               ),
@@ -244,23 +268,29 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
                                 return null;
                               },
                             ),
-                            
+
                             if (_isListeningForId)
                               Padding(
                                 padding: const EdgeInsets.only(top: 12),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.mic, color: Colors.red, size: 20),
+                                    const Icon(
+                                      Icons.mic,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
                                     const SizedBox(width: 8),
                                     Text(
                                       'Listening for ID...',
-                                      style: TextStyle(color: Colors.red.shade400),
+                                      style: TextStyle(
+                                        color: Colors.red.shade400,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            
+
                             // Show when asking blind mode question
                             if (_isAskingBlindMode)
                               Padding(
@@ -268,13 +298,21 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryLight.withOpacity(0.1),
+                                    color: AppTheme.primaryLight.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppTheme.primaryLight),
+                                    border: Border.all(
+                                      color: AppTheme.primaryLight,
+                                    ),
                                   ),
                                   child: Column(
                                     children: [
-                                      const Icon(Icons.mic, color: Colors.red, size: 40),
+                                      const Icon(
+                                        Icons.mic,
+                                        color: Colors.red,
+                                        size: 40,
+                                      ),
                                       const SizedBox(height: 8),
                                       const Text(
                                         'Are you blind?',
@@ -286,15 +324,17 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
                                       const SizedBox(height: 4),
                                       Text(
                                         'Say YES or NO',
-                                        style: TextStyle(color: Colors.grey.shade600),
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
-                            
+
                             const SizedBox(height: 32),
-                            
+
                             // Login button
                             SizedBox(
                               height: 56,
@@ -303,38 +343,49 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryLight,
                                 ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 24,
-                                        width: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
+                                child:
+                                    _isLoading
+                                        ? const SizedBox(
+                                          height: 24,
+                                          width: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : const Text(
+                                          'Login',
+                                          style: TextStyle(fontSize: 16),
                                         ),
-                                      )
-                                    : const Text('Login', style: TextStyle(fontSize: 16)),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 24),
-                            
+
                             // Voice login help
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryLight.withOpacity(0.1),
+                                color: AppTheme.primaryLight.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(Icons.accessibility_new, color: AppTheme.primaryLight),
+                                      const Icon(
+                                        Icons.accessibility_new,
+                                        color: AppTheme.primaryLight,
+                                      ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
                                           'Voice Input Available',
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.copyWith(
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -344,7 +395,8 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> with SingleTick
                                   const SizedBox(height: 8),
                                   Text(
                                     'Tap the microphone or just login - after login, you will be asked "Are you blind?" via voice. Say YES for voice mode.',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
                               ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'firebase_options.dart';
 import 'core/theme.dart';
+import 'models/user_model.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
@@ -9,18 +11,22 @@ import 'features/auth/role_selection_screen.dart';
 import 'features/auth/parent_login_screen.dart';
 import 'features/auth/teacher_login_screen.dart';
 import 'features/auth/student_login_screen.dart';
+import 'features/parent/parent_dashboard.dart';
+import 'features/teacher/teacher_dashboard.dart';
+
+import 'features/student/student_dashboard_entry.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +54,7 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({Key? key}) : super(key: key);
+  const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -65,19 +71,27 @@ class AuthWrapper extends StatelessWidget {
 
         if (snapshot.hasData) {
           // User is logged in - Navigate based on role
-          return FutureBuilder(
+          return FutureBuilder<UserModel?>(
             future: authService.getCurrentUserModel(),
             builder: (context, userSnapshot) {
               if (userSnapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
               }
 
               if (userSnapshot.hasData) {
                 final user = userSnapshot.data!;
-                
-                // Navigate to appropriate dashboard based on role
-                // Note: This is handled by login screens, so we just show loading
-                return const Scaffold(body: Center(child: CircularProgressIndicator()));
+
+                // Return appropriate dashboard based on role
+                switch (user.role) {
+                  case UserRole.parent:
+                    return const ParentDashboard();
+                  case UserRole.teacher:
+                    return const TeacherDashboard();
+                  case UserRole.student:
+                    return StudentDashboardEntry(studentId: user.uid);
+                }
               }
 
               // If no user data, go to role selection

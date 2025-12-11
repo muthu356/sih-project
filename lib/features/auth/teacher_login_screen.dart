@@ -7,7 +7,7 @@ import 'teacher_signup_screen.dart';
 import '../../core/theme.dart';
 
 class TeacherLoginScreen extends StatefulWidget {
-  const TeacherLoginScreen({Key? key}) : super(key: key);
+  const TeacherLoginScreen({super.key});
 
   @override
   State<TeacherLoginScreen> createState() => _TeacherLoginScreenState();
