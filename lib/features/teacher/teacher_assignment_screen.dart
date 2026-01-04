@@ -6,7 +6,7 @@ import '../../models/assignment_model.dart';
 
 class TeacherAssignmentScreen extends StatelessWidget {
   final String teacherId;
-  const TeacherAssignmentScreen({Key? key, required this.teacherId}) : super(key: key);
+  const TeacherAssignmentScreen({super.key, required this.teacherId});
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +36,12 @@ class TeacherAssignmentScreen extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: ElevatedButton.icon(
-                      onPressed: () => _createAssignment(context, student.studentId, teacherId),
+                      onPressed:
+                          () => _createAssignment(
+                            context,
+                            student.studentId,
+                            teacherId,
+                          ),
                       icon: const Icon(Icons.add),
                       label: const Text('Create Assignment'),
                     ),
@@ -50,40 +55,45 @@ class TeacherAssignmentScreen extends StatelessWidget {
     );
   }
 
-  void _createAssignment(BuildContext context, String studentId, String teacherId) async {
+  void _createAssignment(
+    BuildContext context,
+    String studentId,
+    String teacherId,
+  ) async {
     final titleController = TextEditingController();
     final descController = TextEditingController();
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create Assignment'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Create Assignment'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 3,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Create'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
     );
 
     if (result == true && context.mounted) {
@@ -101,9 +111,9 @@ class TeacherAssignmentScreen extends StatelessWidget {
       await dbService.createAssignment(assignment);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Assignment created!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Assignment created!')));
       }
     }
   }

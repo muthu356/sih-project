@@ -7,7 +7,7 @@ import '../../services/auth_service.dart';
 
 class StudentBlindMode extends StatefulWidget {
   final String studentId;
-  const StudentBlindMode({Key? key, required this.studentId}) : super(key: key);
+  const StudentBlindMode({super.key, required this.studentId});
 
   @override
   State<StudentBlindMode> createState() => _StudentBlindModeState();
@@ -29,7 +29,9 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
 
   Future<void> _initializeBlindMode() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    await _voiceService.speak('You are in main dashboard. Say a command to navigate. Available options: assignments, AI assist, or logout.');
+    await _voiceService.speak(
+      'You are in main dashboard. Say a command to navigate. Available options: assignments, AI assist, or logout.',
+    );
     _startListeningLoop();
   }
 
@@ -48,7 +50,9 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
       _statusText = 'Listening...';
     });
 
-    final command = await _voiceService.listen(timeout: const Duration(seconds: 10));
+    final command = await _voiceService.listen(
+      timeout: const Duration(seconds: 10),
+    );
 
     setState(() => _isListening = false);
 
@@ -61,9 +65,9 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
       _statusText = 'You said: $command';
       _isProcessing = true;
     });
-    
+
     await _processCommand(command);
-    
+
     setState(() => _isProcessing = false);
   }
 
@@ -75,12 +79,13 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
       await _navigateTo('home', 'Going to home dashboard');
     } else if (lowerCommand.contains('assignment')) {
       await _navigateTo('assignments', 'Going to assignments page');
-    } else if (lowerCommand.contains('ai') || 
-               lowerCommand.contains('assist') || 
-               lowerCommand.contains('help') ||
-               lowerCommand.contains('question')) {
+    } else if (lowerCommand.contains('ai') ||
+        lowerCommand.contains('assist') ||
+        lowerCommand.contains('help') ||
+        lowerCommand.contains('question')) {
       await _handleAIAssist(command);
-    } else if (lowerCommand.contains('logout') || lowerCommand.contains('exit')) {
+    } else if (lowerCommand.contains('logout') ||
+        lowerCommand.contains('exit')) {
       await _voiceService.speak('Logging out');
       if (mounted) {
         final authService = Provider.of<AuthService>(context, listen: false);
@@ -95,21 +100,25 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
       } else if (page != null) {
         await _navigateTo(page, 'Going to $page page');
       } else {
-        await _voiceService.speak('I did not understand. Say assignments, AI assist, home, or logout.');
+        await _voiceService.speak(
+          'I did not understand. Say assignments, AI assist, home, or logout.',
+        );
       }
     }
   }
 
   Future<void> _handleAIAssist(String initialCommand) async {
     setState(() => _currentPage = 'ai_assist');
-    
+
     // Check if the command itself is a question
     final lowerCmd = initialCommand.toLowerCase();
-    if (lowerCmd.contains('help') || 
-        lowerCmd.contains('assist') || 
+    if (lowerCmd.contains('help') ||
+        lowerCmd.contains('assist') ||
         lowerCmd.contains('ai')) {
       // User is just navigating to AI assist
-      await _voiceService.speak('AI assistant activated. Ask me any study question.');
+      await _voiceService.speak(
+        'AI assistant activated. Ask me any study question.',
+      );
       await _waitForQuestion();
     } else {
       // User asked a direct question
@@ -123,14 +132,18 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
       _statusText = 'Ask your question...';
     });
 
-    final question = await _voiceService.listen(timeout: const Duration(seconds: 10));
+    final question = await _voiceService.listen(
+      timeout: const Duration(seconds: 10),
+    );
 
     setState(() => _isListening = false);
 
     if (question != null && question.isNotEmpty) {
       await _answerQuestion(question);
     } else {
-      await _voiceService.speak('I did not hear a question. Say help again to try.');
+      await _voiceService.speak(
+        'I did not hear a question. Say help again to try.',
+      );
     }
   }
 
@@ -147,12 +160,14 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
 
       // Read answer aloud
       await _voiceService.speak(answer);
-      
+
       // Ask if they want to continue
       await _voiceService.speak('Do you have another question? Say yes or no.');
-      
-      final response = await _voiceService.listen(timeout: const Duration(seconds: 5));
-      
+
+      final response = await _voiceService.listen(
+        timeout: const Duration(seconds: 5),
+      );
+
       if (response != null && response.toLowerCase().contains('yes')) {
         await _waitForQuestion();
       } else {
@@ -160,7 +175,9 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
         setState(() => _currentPage = 'home');
       }
     } catch (e) {
-      await _voiceService.speak('Sorry, I encountered an error. Please try again.');
+      await _voiceService.speak(
+        'Sorry, I encountered an error. Please try again.',
+      );
       setState(() => _currentPage = 'home');
     }
   }
@@ -168,7 +185,7 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
   Future<void> _navigateTo(String page, String announcement) async {
     setState(() => _currentPage = page);
     await _voiceService.speak(announcement);
-    
+
     if (page == 'assignments') {
       await _handleAssignments();
     }
@@ -176,28 +193,30 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
 
   Future<void> _handleAssignments() async {
     await _voiceService.speak('Loading your assignments.');
-    
+
     try {
       final dbService = Provider.of<DatabaseService>(context, listen: false);
-      final assignmentsStream = dbService.getStudentAssignments(widget.studentId);
-      
+      final assignmentsStream = dbService.getStudentAssignments(
+        widget.studentId,
+      );
+
       final snapshot = await assignmentsStream.first;
-      
+
       if (snapshot.isEmpty) {
         await _voiceService.speak('You have no assignments.');
         setState(() => _currentPage = 'home');
         return;
       }
-      
+
       await _voiceService.speak('You have ${snapshot.length} assignments.');
-      
+
       for (var i = 0; i < snapshot.length; i++) {
         final assignment = snapshot[i];
         await _voiceService.speak(
-          'Assignment ${i + 1}. ${assignment.title}. ${assignment.description}. Status: ${assignment.status.name}'
+          'Assignment ${i + 1}. ${assignment.title}. ${assignment.description}. Status: ${assignment.status.name}',
         );
       }
-      
+
       await _voiceService.speak('End of assignments. Returning to home.');
       setState(() => _currentPage = 'home');
     } catch (e) {
@@ -239,10 +258,7 @@ class _StudentBlindModeState extends State<StudentBlindMode> {
               padding: const EdgeInsets.all(24),
               child: Text(
                 _statusText,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 18,
-                ),
+                style: const TextStyle(color: Colors.white70, fontSize: 18),
                 textAlign: TextAlign.center,
               ),
             ),

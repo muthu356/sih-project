@@ -5,7 +5,7 @@ import '../../models/assignment_model.dart';
 
 class StudentAssignmentScreen extends StatelessWidget {
   final String studentId;
-  const StudentAssignmentScreen({Key? key, required this.studentId}) : super(key: key);
+  const StudentAssignmentScreen({super.key, required this.studentId});
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +61,15 @@ class StudentAssignmentScreen extends StatelessWidget {
                   ],
                 ),
                 trailing: ElevatedButton(
-                  onPressed: assignment.status == AssignmentStatus.completed
-                      ? null
-                      : () => _submitAssignment(context, assignment),
-                  child: Text(assignment.status == AssignmentStatus.completed ? 'Done' : 'Submit'),
+                  onPressed:
+                      assignment.status == AssignmentStatus.completed
+                          ? null
+                          : () => _submitAssignment(context, assignment),
+                  child: Text(
+                    assignment.status == AssignmentStatus.completed
+                        ? 'Done'
+                        : 'Submit',
+                  ),
                 ),
               ),
             );
@@ -87,32 +92,36 @@ class StudentAssignmentScreen extends StatelessWidget {
     }
   }
 
-  void _submitAssignment(BuildContext context, AssignmentModel assignment) async {
+  void _submitAssignment(
+    BuildContext context,
+    AssignmentModel assignment,
+  ) async {
     final contentController = TextEditingController();
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Submit Assignment'),
-        content: TextField(
-          controller: contentController,
-          decoration: const InputDecoration(
-            labelText: 'Your Answer',
-            hintText: 'Enter your submission here...',
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Submit Assignment'),
+            content: TextField(
+              controller: contentController,
+              decoration: const InputDecoration(
+                labelText: 'Your Answer',
+                hintText: 'Enter your submission here...',
+              ),
+              maxLines: 5,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Submit'),
+              ),
+            ],
           ),
-          maxLines: 5,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Submit'),
-          ),
-        ],
-      ),
     );
 
     if (result == true && context.mounted) {
@@ -128,9 +137,9 @@ class StudentAssignmentScreen extends StatelessWidget {
       await dbService.submitAssignment(submission);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Assignment submitted!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Assignment submitted!')));
       }
     }
   }

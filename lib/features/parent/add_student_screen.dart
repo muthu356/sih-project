@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/database_service.dart';
-import '../../services/auth_service.dart';
 import '../../models/student_model.dart';
 import '../../core/theme.dart';
 
 class AddStudentScreen extends StatefulWidget {
   final String parentId;
-  const AddStudentScreen({Key? key, required this.parentId}) : super(key: key);
+  const AddStudentScreen({super.key, required this.parentId});
 
   @override
   State<AddStudentScreen> createState() => _AddStudentScreenState();
@@ -53,18 +52,27 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       );
 
       await dbService.createStudent(student);
-      await dbService.linkStudentToParent(_studentIdController.text.trim(), widget.parentId);
+      await dbService.linkStudentToParent(
+        _studentIdController.text.trim(),
+        widget.parentId,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Student added successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Student added successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -90,7 +98,11 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.person_add, size: 70, color: AppTheme.primaryLight),
+              const Icon(
+                Icons.person_add,
+                size: 70,
+                color: AppTheme.primaryLight,
+              ),
               const SizedBox(height: 24),
               const Text(
                 'Create Student Profile',
@@ -110,7 +122,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   labelText: 'Full Name',
                   prefixIcon: Icon(Icons.person_outlined),
                 ),
-                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -120,7 +134,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   prefixIcon: Icon(Icons.badge_outlined),
                   hintText: 'e.g., ST101',
                 ),
-                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -149,7 +165,11 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                         prefixIcon: Icon(Icons.class_outlined),
                         hintText: 'e.g., A',
                       ),
-                      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? 'Required'
+                                  : null,
                     ),
                   ),
                 ],
@@ -178,7 +198,10 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                           ),
                           Text(
                             'For visually impaired students',
-                            style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue.shade700,
+                            ),
                           ),
                         ],
                       ),
@@ -186,7 +209,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                     Switch(
                       value: _isBlind,
                       onChanged: (value) => setState(() => _isBlind = value),
-                      activeColor: AppTheme.primaryLight,
+                      activeThumbColor: AppTheme.primaryLight,
                     ),
                   ],
                 ),
@@ -196,14 +219,23 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _addStudent,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryLight),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
-                      : const Text('Add Student', style: TextStyle(fontSize: 16)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryLight,
+                  ),
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : const Text(
+                            'Add Student',
+                            style: TextStyle(fontSize: 16),
+                          ),
                 ),
               ),
             ],

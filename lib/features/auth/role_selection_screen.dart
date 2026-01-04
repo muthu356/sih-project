@@ -5,13 +5,14 @@ import 'student_login_screen.dart';
 import '../../core/theme.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
-  const RoleSelectionScreen({Key? key}) : super(key: key);
+  const RoleSelectionScreen({super.key});
 
   @override
   State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
 }
 
-class _RoleSelectionScreenState extends State<RoleSelectionScreen> with TickerProviderStateMixin {
+class _RoleSelectionScreenState extends State<RoleSelectionScreen>
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -23,11 +24,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with TickerPr
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
-    
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
@@ -67,26 +69,22 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with TickerPr
                 children: [
                   const Spacer(),
                   // App Title
-                  const Icon(
-                    Icons.school,
-                    size: 80,
-                    color: Colors.white,
-                  ),
+                  const Icon(Icons.school, size: 80, color: Colors.white),
                   const SizedBox(height: 24),
                   Text(
                     'EduGuardian',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 40,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 40,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Smart Parental Control & Student Monitoring',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
+                      color: Colors.white.withOpacity(0.9),
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const Spacer(),
@@ -100,10 +98,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with TickerPr
                           subtitle: 'Monitor and guide your child',
                           icon: Icons.family_restroom,
                           gradient: AppTheme.purpleGradient,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ParentLoginScreen()),
-                          ),
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const ParentLoginScreen(),
+                                ),
+                              ),
                         ),
                         const SizedBox(height: 16),
                         _RoleCard(
@@ -111,10 +113,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with TickerPr
                           subtitle: 'Manage students and assignments',
                           icon: Icons.school,
                           gradient: AppTheme.accentGradient,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const TeacherLoginScreen()),
-                          ),
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const TeacherLoginScreen(),
+                                ),
+                              ),
                         ),
                         const SizedBox(height: 16),
                         _RoleCard(
@@ -122,10 +128,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with TickerPr
                           subtitle: 'Access your learning portal',
                           icon: Icons.person,
                           gradient: AppTheme.primaryGradient,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const StudentLoginScreen()),
-                          ),
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const StudentLoginScreen(),
+                                ),
+                              ),
                         ),
                       ],
                     ),
@@ -160,7 +170,8 @@ class _RoleCard extends StatefulWidget {
   State<_RoleCard> createState() => _RoleCardState();
 }
 
-class _RoleCardState extends State<_RoleCard> with SingleTickerProviderStateMixin {
+class _RoleCardState extends State<_RoleCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
 
@@ -220,11 +231,7 @@ class _RoleCardState extends State<_RoleCard> with SingleTickerProviderStateMixi
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(
-                        widget.icon,
-                        size: 32,
-                        color: Colors.white,
-                      ),
+                      child: Icon(widget.icon, size: 32, color: Colors.white),
                     ),
                     const SizedBox(width: 20),
                     Expanded(

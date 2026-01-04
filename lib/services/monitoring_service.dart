@@ -36,8 +36,8 @@ class MonitoringService {
   bool _isMonitoring = false;
   Timer? _monitoringTimer;
   DateTime? _lastCheckTime;
-  Map<String, DateTime> _appStartTimes = {};
-  Map<String, Duration> _appUsageMap = {};
+  final Map<String, DateTime> _appStartTimes = {};
+  final Map<String, Duration> _appUsageMap = {};
 
   bool get isMonitoring => _isMonitoring;
 
@@ -73,9 +73,13 @@ class MonitoringService {
     try {
       // Get app usage stats for the last 5 seconds
       final endTime = DateTime.now();
-      final startTime = _lastCheckTime ?? endTime.subtract(const Duration(seconds: 5));
+      final startTime =
+          _lastCheckTime ?? endTime.subtract(const Duration(seconds: 5));
 
-      List<AppUsageInfo> infos = await AppUsage().getAppUsage(startTime, endTime);
+      List<AppUsageInfo> infos = await AppUsage().getAppUsage(
+        startTime,
+        endTime,
+      );
 
       for (var info in infos) {
         if (info.packageName == 'com.example.flutter_application') {
@@ -118,14 +122,35 @@ class MonitoringService {
   void _simulateAppUsage() {
     // Simulate app usage for demo purposes
     final apps = [
-      {'name': 'YouTube', 'package': 'com.google.android.youtube', 'title': 'Watching: Flutter Tutorial'},
-      {'name': 'Instagram', 'package': 'com.instagram.android', 'title': 'Viewing Stories'},
-      {'name': 'WhatsApp', 'package': 'com.whatsapp', 'title': 'Chatting with Friends'},
-      {'name': 'Chrome', 'package': 'com.android.chrome', 'title': 'Browsing: Stack Overflow'},
-      {'name': 'Spotify', 'package': 'com.spotify.music', 'title': 'Playing: Study Music'},
+      {
+        'name': 'YouTube',
+        'package': 'com.google.android.youtube',
+        'title': 'Watching: Flutter Tutorial',
+      },
+      {
+        'name': 'Instagram',
+        'package': 'com.instagram.android',
+        'title': 'Viewing Stories',
+      },
+      {
+        'name': 'WhatsApp',
+        'package': 'com.whatsapp',
+        'title': 'Chatting with Friends',
+      },
+      {
+        'name': 'Chrome',
+        'package': 'com.android.chrome',
+        'title': 'Browsing: Stack Overflow',
+      },
+      {
+        'name': 'Spotify',
+        'package': 'com.spotify.music',
+        'title': 'Playing: Study Music',
+      },
     ];
 
-    final randomApp = apps[(DateTime.now().millisecondsSinceEpoch ~/ 2000) % apps.length];
+    final randomApp =
+        apps[(DateTime.now().millisecondsSinceEpoch ~/ 2000) % apps.length];
     final now = DateTime.now();
 
     if (!_appStartTimes.containsKey(randomApp['package'])) {
@@ -161,8 +186,8 @@ class MonitoringService {
       'com.amazon.mShop.android.shopping': 'Amazon',
     };
 
-    return displayNames[packageName] ?? 
-           packageName.split('.').last.replaceAll(RegExp(r'[^a-zA-Z0-9]'), ' ');
+    return displayNames[packageName] ??
+        packageName.split('.').last.replaceAll(RegExp(r'[^a-zA-Z0-9]'), ' ');
   }
 
   String? _getAppTitle(String packageName) {
@@ -192,4 +217,3 @@ class MonitoringService {
     _usageStreamController.close();
   }
 }
-

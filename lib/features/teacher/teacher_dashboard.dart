@@ -9,7 +9,7 @@ import 'teacher_chat_list_screen.dart';
 import '../../core/theme.dart';
 
 class TeacherDashboard extends StatefulWidget {
-  const TeacherDashboard({Key? key}) : super(key: key);
+  const TeacherDashboard({super.key});
 
   @override
   State<TeacherDashboard> createState() => _TeacherDashboardState();
@@ -30,7 +30,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         flexibleSpace: Container(
           decoration: BoxDecoration(gradient: AppTheme.accentGradient),
         ),
-        title: const Text('Teacher Dashboard', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Teacher Dashboard',
+          style: TextStyle(color: Colors.white),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
@@ -54,37 +57,51 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         stream: dbService.getUnreadChatCount(teacherId),
         builder: (context, snapshot) {
           final unreadCount = snapshot.data ?? 0;
-          
+
           return NavigationBar(
             selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+            onDestinationSelected:
+                (index) => setState(() => _selectedIndex = index),
             destinations: [
-              const NavigationDestination(icon: Icon(Icons.people), label: 'Students'),
-              const NavigationDestination(icon: Icon(Icons.assignment), label: 'Assignments'),
+              const NavigationDestination(
+                icon: Icon(Icons.people),
+                label: 'Students',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.assignment),
+                label: 'Assignments',
+              ),
               NavigationDestination(
-                icon: unreadCount > 0
-                    ? Badge(
-                        label: Text('$unreadCount'),
-                        child: const Icon(Icons.chat),
-                      )
-                    : const Icon(Icons.chat),
+                icon:
+                    unreadCount > 0
+                        ? Badge(
+                          label: Text('$unreadCount'),
+                          child: const Icon(Icons.chat),
+                        )
+                        : const Icon(Icons.chat),
                 label: 'Chats',
               ),
             ],
           );
         },
       ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TeacherAddStudentScreen(teacherId: teacherId)),
-              ),
-              icon: const Icon(Icons.person_add),
-              label: const Text('Link Student'),
-              backgroundColor: AppTheme.accentOrange,
-            )
-          : null,
+      floatingActionButton:
+          _selectedIndex == 0
+              ? FloatingActionButton.extended(
+                onPressed:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                TeacherAddStudentScreen(teacherId: teacherId),
+                      ),
+                    ),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Link Student'),
+                backgroundColor: AppTheme.accentOrange,
+              )
+              : null,
     );
   }
 }
@@ -109,7 +126,11 @@ class _StudentsTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.people_outline, size: 100, color: Colors.grey.shade300),
+                Icon(
+                  Icons.people_outline,
+                  size: 100,
+                  color: Colors.grey.shade300,
+                ),
                 const SizedBox(height: 24),
                 Text(
                   'No students yet',
@@ -133,7 +154,9 @@ class _StudentsTab extends StatelessWidget {
             return Card(
               elevation: 2,
               margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: ListTile(
                 contentPadding: const EdgeInsets.all(16),
                 leading: CircleAvatar(
@@ -150,7 +173,10 @@ class _StudentsTab extends StatelessWidget {
                 ),
                 title: Text(
                   student.fullName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,14 +186,20 @@ class _StudentsTab extends StatelessWidget {
                     if (student.isBlind)
                       Container(
                         margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           'Voice mode',
-                          style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue.shade700,
+                          ),
                         ),
                       ),
                   ],

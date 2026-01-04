@@ -4,10 +4,11 @@ import '../../services/database_service.dart';
 
 class TeacherAddStudentScreen extends StatefulWidget {
   final String teacherId;
-  const TeacherAddStudentScreen({Key? key, required this.teacherId}) : super(key: key);
+  const TeacherAddStudentScreen({super.key, required this.teacherId});
 
   @override
-  State<TeacherAddStudentScreen> createState() => _TeacherAddStudentScreenState();
+  State<TeacherAddStudentScreen> createState() =>
+      _TeacherAddStudentScreenState();
 }
 
 class _TeacherAddStudentScreenState extends State<TeacherAddStudentScreen> {
@@ -30,9 +31,11 @@ class _TeacherAddStudentScreenState extends State<TeacherAddStudentScreen> {
 
       // Check if student exists
       final student = await dbService.getStudent(studentId);
-      
+
       if (student == null) {
-        throw Exception('Student ID not found. Only parents can create students.');
+        throw Exception(
+          'Student ID not found. Only parents can create students.',
+        );
       }
 
       await dbService.linkStudentToTeacher(studentId, widget.teacherId);
@@ -45,9 +48,9 @@ class _TeacherAddStudentScreenState extends State<TeacherAddStudentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -78,7 +81,9 @@ class _TeacherAddStudentScreenState extends State<TeacherAddStudentScreen> {
               decoration: InputDecoration(
                 labelText: 'Student ID',
                 prefixIcon: const Icon(Icons.badge),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 hintText: 'e.g., STU_ABCD1234',
               ),
             ),
@@ -88,13 +93,17 @@ class _TeacherAddStudentScreenState extends State<TeacherAddStudentScreen> {
               height: 50,
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _linkStudent,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Icon(Icons.link),
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : const Icon(Icons.link),
                 label: const Text('Link Student'),
               ),
             ),
